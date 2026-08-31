@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Kaiko</string>
+    <string name="app_tagline">Emergency Alert &amp; Hardware Trigger Prototype</string>
+    <string name="accessibility_service_label">Kaiko Emergency Trigger Listener</string>
+    <string name="accessibility_service_description">Enables Kaiko to listen for 3 consecutive Volume Down presses to trigger the emergency alert.</string>
+    
+    <!-- Onboarding UI Strings -->
+    <string name="guardian_phone_label">Guardian Phone Number</string>
+    <string name="guardian_phone_hint">e.g., +15551234567</string>
+    <string name="btn_save_and_enable">Save &amp; Enable</string>
+    <string name="btn_open_accessibility">Enable Accessibility Service</string>
+    <string name="status_accessibility_enabled">● Accessibility Service: Enabled</string>
+    <string name="status_accessibility_disabled">● Accessibility Service: Disabled (Tap below to enable)</string>
+    <string name="saved_success_toast">Guardian number saved!</string>
+    <string name="phone_empty_error">Please enter a valid phone number</string>
+    
+    <!-- Notification & Widget -->
+    <string name="widget_sos_text">🆘 SOS</string>
+    <string name="notification_channel_name">Emergency Alerts</string>
+    <string name="notification_channel_desc">Shows status notifications when Kaiko emergency triggers fire.</string>
+    <string name="alert_sent_title">Help alert sent</string>
+</resources>
