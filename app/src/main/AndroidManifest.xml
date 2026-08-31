@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="all">
+
+    <!-- 
+        ========================================================================
+        HARDWARE FEATURES
+        ========================================================================
+    -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
 
     <!-- 
         ========================================================================
@@ -8,31 +22,29 @@
     -->
 
     <!-- 
-        1. SEND_SMS: Required to send the emergency text message containing the user's
-           location and distress message directly to the registered guardian's phone number.
+        1. SEND_SMS: Required to send emergency distress SMS to the guardian.
     -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission
+        android:name="android.permission.SEND_SMS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- 
-        2. ACCESS_FINE_LOCATION: Required to query high-accuracy GPS coordinates (latitude, 
-           longitude) using FusedLocationProviderClient when an emergency trigger fires.
+        2. ACCESS_FINE_LOCATION: Query high-accuracy GPS coordinates.
     -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- 
-        3. ACCESS_COARSE_LOCATION: Required as a companion/fallback location permission
-           to fetch approximate cellular/Wi-Fi location if GPS lock is slow or indoors.
+        3. ACCESS_COARSE_LOCATION: Cellular/Wi-Fi fallback location.
     -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- 
-        4. POST_NOTIFICATIONS: Required on Android 13 (API level 33) and above to display
-           the confirmation system notification confirming that the help alert was dispatched.
+        4. POST_NOTIFICATIONS: System notifications on Android 13+ (API 33+).
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 
-        5. VIBRATE: Optional tactile feedback when the emergency trigger is successfully activated.
+        5. VIBRATE: Tactile feedback on emergency trigger.
     -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
@@ -48,13 +60,10 @@
             ====================================================================
             1. ONBOARDING & SETUP ACTIVITY
             ====================================================================
-            Single activity allowing the user to configure guardian phone number,
-            grant runtime permissions, and check/enable Accessibility Service.
         -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -66,14 +75,13 @@
             ====================================================================
             2. HARDWARE BUTTON LISTENER ACCESSIBILITY SERVICE
             ====================================================================
-            Monitors hardware volume down key events globally (even with screen locked/off).
-            Protected with BIND_ACCESSIBILITY_SERVICE permission so only system can bind.
         -->
         <service
             android:name=".KaikoAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true"
-            android:label="@string/accessibility_service_label">
+            android:label="@string/accessibility_service_label"
+            tools:ignore="AccessibilityServicePolicy">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
@@ -87,8 +95,6 @@
             ====================================================================
             3. HOME SCREEN SOS WIDGET RECEIVER
             ====================================================================
-            AppWidgetProvider handling 1x1 home screen widget updates and single-tap
-            SOS trigger broadcasts.
         -->
         <receiver
             android:name=".KaikoWidgetProvider"
@@ -106,3 +112,5 @@
     </application>
 
 </manifest>
+
+

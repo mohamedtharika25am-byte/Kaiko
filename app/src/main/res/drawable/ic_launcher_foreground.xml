@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Red circle background badge -->
+    <path
+        android:fillColor="#DC2626"
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24 Z" />
+    <!-- White SOS Shield icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,34 L38,40 v12.18 c0,10.1 6.82,19.52 16,21.82 c9.18,-2.3 16,-11.72 16,-21.82 V40 L54,34 z M56,62 h-4 v-4 h4 V62 z M56,54 h-4 V44 h4 V54 z" />
+</vector>
