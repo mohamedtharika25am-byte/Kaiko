@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -39,7 +38,9 @@ class MainActivity : AppCompatActivity() {
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
         val smsGranted = permissions[Manifest.permission.SEND_SMS] ?: false
 
-        if (fineLocationGranted && smsGranted) {
+        val locationGranted = fineLocationGranted || coarseLocationGranted
+
+        if (locationGranted && smsGranted) {
             Toast.makeText(this, "Permissions granted successfully!", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(

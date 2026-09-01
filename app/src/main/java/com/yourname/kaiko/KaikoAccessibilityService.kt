@@ -69,7 +69,7 @@ class KaikoAccessibilityService : AccessibilityService() {
         }
 
         // 2. Evict timestamps outside the 2000ms sliding window
-        while (pressTimestamps.isNotEmpty() && (now - pressTimestamps.peekFirst() > SLIDING_WINDOW_MS)) {
+        while (pressTimestamps.isNotEmpty() && (now - (pressTimestamps.peekFirst() ?: 0L) > SLIDING_WINDOW_MS)) {
             pressTimestamps.pollFirst()
         }
 
