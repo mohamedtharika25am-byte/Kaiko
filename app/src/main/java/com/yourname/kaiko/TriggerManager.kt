@@ -41,13 +41,9 @@ object TriggerManager {
     // =========================================================================
     // 6. DEBUG MODE TOGGLE
     // =========================================================================
-    /**
-     * DEBUG_MODE:
-     * - true: Skip actual SmsManager.sendTextMessage() call, log the SMS payload to Logcat,
-     *         and still display the system notification for visual confirmation.
-     * - false: Send the actual SMS to the guardian phone number.
-     */
-    const val DEBUG_MODE = true
+    // Set to true for safe testing (no real SMS sent).
+    // Set to false to send actual SMS alerts.
+    const val DEBUG_MODE = false
 
     // =========================================================================
     // CONSTANTS
