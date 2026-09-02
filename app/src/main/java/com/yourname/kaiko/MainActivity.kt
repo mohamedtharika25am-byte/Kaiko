@@ -3,14 +3,15 @@ package com.yourname.kaiko
 import android.Manifest
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.ComponentName
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,16 +20,24 @@ import androidx.core.content.ContextCompat
 import com.yourname.kaiko.databinding.ActivityMainBinding
 
 /**
- * Onboarding and Configuration Activity for Kaiko.
- * Provides a minimal, focused UI to:
- * 1. Enter and persist the guardian's emergency phone number in SharedPreferences.
- * 2. Request necessary runtime permissions (SEND_SMS, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATIONS).
- * 3. Check and launch Accessibility Settings to enable the background hardware button trigger service.
+ * Onboarding and Configuration Activity for Kaiko (v0.0.2).
+ * Supports:
+ * 1. Multi-Guardian Configuration (Guardian 1 mandatory, Guardians 2 & 3 optional, Final contact optional).
+ * 2. Escalation Delay Configuration (30s, 60s, 120s for testing).
+ * 3. Real-time Active Emergency banner with "I'm Safe Now" and "Simulate Ack [TEST]" actions.
+ * 4. Runtime permission requests and Accessibility Service status check.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
+
+    // Receiver to update UI live when SOS state changes
+    private val stateChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            updateActiveSosBanner()
+        }
+    }
 
     // Permission request launcher
     private val requestPermissionsLauncher = registerForActivityResult(
@@ -56,71 +65,181 @@ class MainActivity : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences(TriggerManager.PREFS_NAME, Context.MODE_PRIVATE)
 
-        // Pre-populate existing guardian phone number if previously saved
-        val savedPhone = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_PHONE, "")
-        binding.etGuardianPhone.setText(savedPhone)
-
+        loadSavedConfiguration()
         setupListeners()
+        updateActiveSosBanner()
     }
 
     override fun onResume() {
         super.onResume()
-        // Refresh Accessibility Service status badge when returning to the app
         updateAccessibilityStatus()
+        updateActiveSosBanner()
+
+        // Register state change receiver
+        val filter = IntentFilter(TriggerManager.ACTION_STATE_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(stateChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(stateChangeReceiver, filter)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            unregisterReceiver(stateChangeReceiver)
+        } catch (e: Exception) {
+            // Ignored if not registered
+        }
+    }
+
+    private fun loadSavedConfiguration() {
+        // Guardian 1 (Preserves existing data from KEY_GUARDIAN_PHONE)
+        val g1 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_PHONE, "")
+        binding.etGuardian1.setText(g1)
+
+        // Guardian 2
+        val g2 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_2_PHONE, "")
+        binding.etGuardian2.setText(g2)
+
+        // Guardian 3
+        val g3 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_3_PHONE, "")
+        binding.etGuardian3.setText(g3)
+
+        // Final Helpline
+        val helpline = sharedPreferences.getString(TriggerManager.KEY_FINAL_HELPLINE_PHONE, "")
+        binding.etHelpline.setText(helpline)
+
+        // Escalation Delay
+        val delay = sharedPreferences.getLong(
+            TriggerManager.KEY_ESCALATION_DELAY_SECONDS,
+            TriggerManager.DEFAULT_ESCALATION_DELAY_SECONDS
+        )
+        when (delay) {
+            30L -> binding.rbDelay30.isChecked = true
+            120L -> binding.rbDelay120.isChecked = true
+            else -> binding.rbDelay60.isChecked = true
+        }
     }
 
     private fun setupListeners() {
-        // "Save & Enable" Button
+        // Save & Enable Button
         binding.btnSaveAndEnable.setOnClickListener {
-            val phone = binding.etGuardianPhone.text.toString().trim()
-            if (phone.isEmpty()) {
-                binding.etGuardianPhone.error = getString(R.string.phone_empty_error)
-                binding.etGuardianPhone.requestFocus()
+            val g1 = binding.etGuardian1.text.toString().trim()
+            val g2 = binding.etGuardian2.text.toString().trim()
+            val g3 = binding.etGuardian3.text.toString().trim()
+            val helpline = binding.etHelpline.text.toString().trim()
+
+            // 1. Validate Guardian 1 (Mandatory)
+            if (g1.isEmpty()) {
+                binding.etGuardian1.error = "Guardian 1 phone number is required"
+                binding.etGuardian1.requestFocus()
+                return@setOnClickListener
+            }
+            if (!isValidPhoneNumber(g1)) {
+                binding.etGuardian1.error = "Please enter a valid phone number"
+                binding.etGuardian1.requestFocus()
                 return@setOnClickListener
             }
 
-            // Save phone number locally to SharedPreferences
+            // 2. Validate optional guardians
+            if (g2.isNotEmpty() && !isValidPhoneNumber(g2)) {
+                binding.etGuardian2.error = "Please enter a valid phone number"
+                binding.etGuardian2.requestFocus()
+                return@setOnClickListener
+            }
+            if (g3.isNotEmpty() && !isValidPhoneNumber(g3)) {
+                binding.etGuardian3.error = "Please enter a valid phone number"
+                binding.etGuardian3.requestFocus()
+                return@setOnClickListener
+            }
+
+            // 3. Prevent duplicates
+            val contactList = listOfNotNull(
+                g1.ifEmpty { null },
+                g2.ifEmpty { null },
+                g3.ifEmpty { null }
+            )
+            if (contactList.size != contactList.distinct().size) {
+                Toast.makeText(this, "Error: Duplicate guardian phone numbers detected", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // 4. Save Escalation Delay
+            val delay = when {
+                binding.rbDelay30.isChecked -> 30L
+                binding.rbDelay120.isChecked -> 120L
+                else -> 60L
+            }
+
             sharedPreferences.edit()
-                .putString(TriggerManager.KEY_GUARDIAN_PHONE, phone)
+                .putString(TriggerManager.KEY_GUARDIAN_PHONE, g1)
+                .putString(TriggerManager.KEY_GUARDIAN_2_PHONE, g2)
+                .putString(TriggerManager.KEY_GUARDIAN_3_PHONE, g3)
+                .putString(TriggerManager.KEY_FINAL_HELPLINE_PHONE, helpline)
+                .putLong(TriggerManager.KEY_ESCALATION_DELAY_SECONDS, delay)
                 .apply()
 
-            Toast.makeText(this, getString(R.string.saved_success_toast), Toast.LENGTH_SHORT).show()
-
-            // Request runtime permissions
+            Toast.makeText(this, "Configuration saved successfully!", Toast.LENGTH_SHORT).show()
             requestAppPermissions()
         }
 
-        // "Enable Accessibility Service" Button -> Direct intent to Android Accessibility Settings
+        // Accessibility Settings Button
         binding.btnOpenAccessibility.setOnClickListener {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             startActivity(intent)
         }
+
+        // "I'm Safe Now" Button
+        binding.btnSafeNow.setOnClickListener {
+            TriggerManager.markUserSafe(this)
+            updateActiveSosBanner()
+            Toast.makeText(this, "Marked safe. Escalation stopped.", Toast.LENGTH_SHORT).show()
+        }
+
+        // "Simulate Guardian Ack [TEST ONLY]" Button
+        binding.btnSimulateAck.setOnClickListener {
+            TriggerManager.simulateGuardianAck(this)
+            updateActiveSosBanner()
+            Toast.makeText(this, "Simulated Guardian Acknowledgement recorded.", Toast.LENGTH_SHORT).show()
+        }
+
+        // Manual Test SOS Trigger
+        binding.btnManualTestTrigger.setOnClickListener {
+            TriggerManager.fireAlert(this, "manual_app_test")
+            updateActiveSosBanner()
+        }
     }
 
-    /**
-     * Requests required runtime permissions for SMS, Location, and Notifications.
-     */
+    private fun updateActiveSosBanner() {
+        val currentState = TriggerManager.getCurrentState(this)
+        if (currentState.isActive()) {
+            binding.cardActiveSos.visibility = View.VISIBLE
+            binding.tvActiveSosStatus.text = "Status: ${currentState.displayName}"
+        } else {
+            binding.cardActiveSos.visibility = View.GONE
+        }
+    }
+
+    private fun isValidPhoneNumber(phone: String): Boolean {
+        val cleaned = phone.replace(Regex("[^0-9+]"), "")
+        return cleaned.length >= 7 && (phone.startsWith("+") || phone.all { it.isDigit() || it.isWhitespace() || it == '-' || it == '(' || it == ')' })
+    }
+
     private fun requestAppPermissions() {
         val permissions = mutableListOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
-
-        // Request POST_NOTIFICATIONS on Android 13+ (API 33+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-
         requestPermissionsLauncher.launch(permissions.toTypedArray())
     }
 
-    /**
-     * Checks whether KaikoAccessibilityService is currently active and enabled in system settings.
-     */
     private fun updateAccessibilityStatus() {
         val isEnabled = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
-
         if (isEnabled) {
             binding.tvAccessibilityStatus.text = getString(R.string.status_accessibility_enabled)
             binding.tvAccessibilityStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
@@ -130,14 +249,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Helper to verify if the given AccessibilityService class is enabled in Android Settings.
-     */
     private fun isAccessibilityServiceEnabled(
         context: Context,
         serviceClass: Class<out AccessibilityService>
     ): Boolean {
-        // 1. Check via AccessibilityManager
         val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
         val runningServices = am?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
         if (runningServices != null) {
@@ -151,23 +266,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
-        // 2. Check via Settings.Secure as fallback
-        val expectedComponentName = ComponentName(context, serviceClass).flattenToString()
-        val enabledServicesSetting = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServicesSetting)
-        while (colonSplitter.hasNext()) {
-            val componentNameString = colonSplitter.next()
-            if (componentNameString.equals(expectedComponentName, ignoreCase = true)) {
-                return true
-            }
-        }
-
         return false
     }
 }

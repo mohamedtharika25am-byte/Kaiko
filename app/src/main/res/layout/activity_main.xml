@@ -1,117 +1,335 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:padding="24dp"
-    tools:context=".MainActivity">
+    android:fillViewport="true">
 
-    <!-- App Name Header -->
-    <TextView
-        android:id="@+id/tvAppTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/app_name"
-        android:textColor="@color/text_primary"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.05"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Tagline -->
-    <TextView
-        android:id="@+id/tvAppTagline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/app_tagline"
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvAppTitle" />
-
-    <!-- Configuration Card -->
     <LinearLayout
-        android:id="@+id/cardConfig"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/bg_card"
         android:orientation="vertical"
         android:padding="20dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvAppTagline">
+        tools:context=".MainActivity">
 
-        <!-- Phone Number Label -->
+        <!-- App Name Header -->
         <TextView
-            android:id="@+id/tvPhoneLabel"
-            android:layout_width="match_parent"
+            android:id="@+id/tvAppTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/guardian_phone_label"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textAllCaps="true"
-            android:letterSpacing="0.08" />
-
-        <!-- Guardian Phone Input -->
-        <EditText
-            android:id="@+id/etGuardianPhone"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="8dp"
-            android:background="@drawable/bg_input"
-            android:hint="@string/guardian_phone_hint"
-            android:importantForAutofill="no"
-            android:inputType="phone"
-            android:paddingHorizontal="16dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:letterSpacing="0.05"
+            android:text="@string/app_name"
             android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint"
-            android:textSize="16sp" />
-
-        <!-- Save & Enable Button -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnSaveAndEnable"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_button_primary"
-            android:text="@string/btn_save_and_enable"
-            android:textColor="@color/on_primary"
-            android:textSize="15sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
-        <!-- Enable Accessibility Service Button -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnOpenAccessibility"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_button_secondary"
-            android:text="@string/btn_open_accessibility"
-            android:textColor="@color/on_secondary"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <!-- Accessibility Service Status Text -->
+        <!-- Tagline -->
         <TextView
-            android:id="@+id/tvAccessibilityStatus"
+            android:id="@+id/tvAppTagline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="4dp"
+            android:text="@string/app_tagline"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <!-- ============================================================= -->
+        <!-- ACTIVE SOS STATUS BANNER (Dynamic Visibility) -->
+        <!-- ============================================================= -->
+        <LinearLayout
+            android:id="@+id/cardActiveSos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:gravity="center"
-            android:text="@string/status_accessibility_disabled"
-            android:textColor="@color/status_disabled"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tvActiveSosTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/active_sos_title"
+                android:textColor="#EF4444"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvActiveSosStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Status: Waiting for Guardian 1"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSafeNow"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_button_primary"
+                android:text="@string/btn_safe_now"
+                android:textColor="@color/on_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSimulateAck"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_button_secondary"
+                android:text="@string/btn_simulate_ack"
+                android:textColor="@color/on_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- ============================================================= -->
+        <!-- MULTIPLE GUARDIANS CONFIGURATION CARD -->
+        <!-- ============================================================= -->
+        <LinearLayout
+            android:id="@+id/cardConfig"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.08"
+                android:text="EMERGENCY ESCALATION CONTACTS"
+                android:textAllCaps="true"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <!-- Guardian 1 (Mandatory) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/guardian_1_label"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/etGuardian1"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_input"
+                android:hint="@string/guardian_phone_hint"
+                android:importantForAutofill="no"
+                android:inputType="phone"
+                android:paddingHorizontal="14dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+
+            <!-- Guardian 2 (Optional) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/guardian_2_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etGuardian2"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_input"
+                android:hint="Optional secondary contact"
+                android:importantForAutofill="no"
+                android:inputType="phone"
+                android:paddingHorizontal="14dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+
+            <!-- Guardian 3 (Optional) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/guardian_3_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etGuardian3"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_input"
+                android:hint="Optional tertiary contact"
+                android:importantForAutofill="no"
+                android:inputType="phone"
+                android:paddingHorizontal="14dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+
+            <!-- Final Helpline / Backup Contact (Optional) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/helpline_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etHelpline"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_input"
+                android:hint="Optional final backup contact"
+                android:importantForAutofill="no"
+                android:inputType="phone"
+                android:paddingHorizontal="14dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+
+            <!-- Escalation Delay Selector (Testing) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/escalation_timeout_label"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgEscalationDelay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rbDelay30"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="30s"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rbDelay60"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:checked="true"
+                    android:text="60s"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rbDelay120"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="120s"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+            </RadioGroup>
+
+            <!-- Save Contacts Button -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSaveAndEnable"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_button_primary"
+                android:text="@string/btn_save_and_enable"
+                android:textColor="@color/on_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- ============================================================= -->
+        <!-- HARDWARE BUTTON TRIGGER (ACCESSIBILITY SERVICE) -->
+        <!-- ============================================================= -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.08"
+                android:text="HARDWARE BUTTON TRIGGER"
+                android:textAllCaps="true"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnOpenAccessibility"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_button_secondary"
+                android:text="@string/btn_open_accessibility"
+                android:textColor="@color/on_secondary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvAccessibilityStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="@string/status_accessibility_disabled"
+                android:textColor="@color/status_disabled"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <!-- ============================================================= -->
+        <!-- MANUAL TEST TRIGGER BUTTON -->
+        <!-- ============================================================= -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnManualTestTrigger"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_input"
+            android:text="🚨 Trigger Test SOS Alert"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

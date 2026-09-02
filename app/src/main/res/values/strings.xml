@@ -15,8 +15,24 @@
     <string name="phone_empty_error">Please enter a valid phone number</string>
     
     <!-- Notification & Widget -->
+    <string name="widget_sos_label">Kaiko SOS</string>
     <string name="widget_sos_text">🆘 SOS</string>
+    <string name="widget_disguised_label">Daily Memo</string>
+    <string name="widget_disguised_text">Daily Memo</string>
+    <string name="widget_disguised_desc">Quick note memo widget</string>
     <string name="notification_channel_name">Emergency Alerts</string>
     <string name="notification_channel_desc">Shows status notifications when Kaiko emergency triggers fire.</string>
     <string name="alert_sent_title">Help alert sent</string>
+    
+    <!-- v0.0.2 Feature Strings -->
+    <string name="tile_label">Quick Alert</string>
+    <string name="guardian_1_label">Guardian 1 (Mandatory)</string>
+    <string name="guardian_2_label">Guardian 2 (Optional)</string>
+    <string name="guardian_3_label">Guardian 3 (Optional)</string>
+    <string name="helpline_label">Backup Contact / Helpline (Optional)</string>
+    <string name="escalation_timeout_label">Escalation Delay (Testing)</string>
+    <string name="btn_safe_now">I\'m Safe Now (Stop Escalation)</string>
+    <string name="btn_simulate_ack">Simulate Guardian Ack [TEST ONLY]</string>
+    <string name="active_sos_title">⚠️ ACTIVE EMERGENCY IN PROGRESS</string>
+    <string name="lockscreen_toggle_label">Enable Lock-Screen Quick Trigger</string>
 </resources>

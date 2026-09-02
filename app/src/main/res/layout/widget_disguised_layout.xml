@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/btn_widget_disguised"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_disguised_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="6dp">
+
+    <ImageView
+        android:id="@+id/iv_widget_memo"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:contentDescription="@string/widget_disguised_desc"
+        android:src="@drawable/ic_memo" />
+
+    <TextView
+        android:id="@+id/tv_widget_memo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/widget_disguised_text"
+        android:textColor="#94A3B8"
+        android:textSize="11sp"
+        android:textStyle="normal" />
+
+</LinearLayout>

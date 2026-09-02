@@ -11,10 +11,19 @@ android {
         applicationId = "com.yourname.kaiko"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "0.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            if (buildType.name == "release") {
+                output?.outputFileName = "Kaiko-v${versionName}.apk"
+            }
+        }
     }
 
     buildTypes {
