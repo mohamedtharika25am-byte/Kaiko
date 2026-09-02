@@ -1,12 +1,113 @@
-# Kaiko — Android Emergency Alert & Hardware Trigger Prototype
+# Kaiko — Android Emergency Safety Prototype
 
-**Kaiko** is a minimal, production-structured Android demo application in Kotlin designed for real-device testing of emergency distress triggers.
+**Kaiko** is an Android emergency distress and safety prototype built in Kotlin. It provides immediate, multi-channel distress triggers, multi-guardian escalation, and state machine management entirely on-device.
 
-It features two trigger methods dispatching to a shared trigger manager:
-1. **Hardware Button Triple-Press Trigger**: Monitored via a background `AccessibilityService` (`KEYCODE_VOLUME_DOWN` pressed 3 times within 2000ms with a 5-second anti-spam cooldown).
-2. **1x1 Home Screen SOS Widget**: Instant single-tap emergency trigger via `AppWidgetProvider`.
+* **Current Version:** `v0.0.2`
+* **Development Status:** Prototype / Testing Stage
+* **Architecture:** 100% Local / On-Device Android implementation (Zero external backend, No Firebase/Firestore, No REST API, No cloud database, No web services).
 
-When activated, the shared `TriggerManager` fetches high-accuracy GPS coordinates (with a 3-second timeout), formats an emergency message with raw coordinates and a Google Maps link, sends an SMS to the guardian's phone number, posts a confirmation notification, and outputs detailed structured logs to Logcat.
+---
+
+> [!WARNING]
+> **Prototype & Testing Notice:** Kaiko is currently an experimental prototype in active development for testing emergency workflow logic. Features such as "Guardian Acknowledgement" are provided via on-device simulation for testing the SOS state machine. It is not yet a certified production emergency response system.
+
+---
+
+## 🚀 Core Features
+
+### 1. Emergency SOS Trigger
+* **Hardware Button Trigger:** Background `AccessibilityService` listens for 3 consecutive presses of the physical `Volume Down` button within a 2000ms sliding window (with a 5-second anti-spam cooldown).
+* Works across any application or while the device is on.
+
+### 2. Home Screen SOS Widget
+* **Direct Emergency Widget:** A 1x1 home screen widget (`KaikoWidgetProvider`) with high-visibility emergency styling for instant 1-tap activation.
+
+### 3. Disguised / Neutral Widget
+* **Daily Memo Widget:** An optional 1x1 neutral widget (`KaikoDisguisedWidgetProvider`) designed for discreet placement.
+* Visually styled as a subtle productivity note ("Daily Memo") without visible emergency or SOS wording, while executing the identical SOS trigger workflow when tapped.
+
+### 4. Multiple Guardians
+* **Guardian 1 (Mandatory):** Primary emergency contact.
+* **Guardian 2 (Optional):** Secondary emergency contact.
+* **Guardian 3 (Optional):** Tertiary emergency contact.
+* **Backup Helpline (Optional):** Configurable final contact field.
+* Includes in-app phone number validation and duplicate number prevention.
+
+### 5. Local SOS State Machine
+Every emergency event is tracked through a structured, persistent state machine (`SosState`):
+* `IDLE` — System ready and monitoring.
+* `SOS_TRIGGERED` — Emergency alert initiated.
+* `INITIAL_ALERT_SENT` — Location acquired and first dispatch prepared.
+* `WAITING_FOR_GUARDIAN_1` — Alert sent to Guardian 1; awaiting response.
+* `GUARDIAN_1_ACKNOWLEDGED` — Guardian 1 acknowledged (escalation halted).
+* `ESCALATE_TO_GUARDIAN_2` / `WAITING_FOR_GUARDIAN_2` — Escalating to Guardian 2.
+* `GUARDIAN_2_ACKNOWLEDGED` — Guardian 2 acknowledged (escalation halted).
+* `ESCALATE_TO_GUARDIAN_3` / `WAITING_FOR_GUARDIAN_3` — Escalating to Guardian 3.
+* `GUARDIAN_3_ACKNOWLEDGED` — Guardian 3 acknowledged (escalation halted).
+* `FINAL_ESCALATION_REQUIRED` — All guardians exhausted without response.
+* `USER_MARKED_SAFE` — User resolved the situation.
+
+### 6. Escalation Chain
+* When an SOS is triggered, Kaiko alerts Guardian 1 and initiates a local escalation countdown.
+* If Guardian 1 does not acknowledge within the configured interval (configurable to 30s, 60s, or 120s for testing), Kaiko automatically escalates to Guardian 2, and then Guardian 3.
+* If a guardian is not configured, the escalation chain intelligently skips to the next step.
+
+```
+SOS Trigger
+   ↓
+Alert Guardian 1
+   ↓
+Wait (30s / 60s / 120s)
+   ↓ (No ack / Send failed)
+Alert Guardian 2 (if configured)
+   ↓
+Wait (30s / 60s / 120s)
+   ↓ (No ack / Send failed)
+Alert Guardian 3 (if configured)
+   ↓
+Final Escalation State
+```
+
+### 7. "I'm Safe Now" (Cancel / Stop Action)
+* When an emergency is active, an **"I'm Safe Now"** action is accessible from both the in-app banner and the ongoing system notification.
+* Tapping this immediately cancels pending `AlarmManager` escalation timers and transitions the state to `USER_MARKED_SAFE`.
+* Existing event history and previously dispatched logs are preserved for auditing.
+
+### 8. SMS Status & Failure Handling with Retry
+* SMS transmissions are monitored through carrier dispatch confirmation (`SmsSentReceiver`).
+* If carrier dispatch fails, the system automatically retries **once** after a 3-second delay.
+* If the retry also fails, Kaiko **immediately advances** to the next guardian in the escalation chain rather than waiting out the full timeout.
+* *Note: Transmission status indicates that the message was accepted by the cellular carrier network; it does not guarantee recipient read delivery.*
+
+### 9. Guardian Acknowledgement Simulation [TEST / PROTOTYPE ONLY]
+* In the current local prototype, guardian acknowledgement is simulated locally via the **"Simulate Guardian Ack [TEST ONLY]"** button in the app and ongoing notification.
+* This allows developers and testers to verify that acknowledgement successfully halts escalation without requiring a secondary cellular device or cloud server.
+
+### 10. Lock-Screen Quick Access
+* **Quick Settings Tile:** Supports Android's Quick Settings shade (`KaikoTileService`). Users can pull down the quick settings shade directly from the lock screen and tap "Quick Alert" for 1-tap triggering.
+* **Public Ongoing Notification:** An ongoing notification with `VISIBILITY_PUBLIC` remains active during an SOS event, exposing "I'm Safe Now" and test actions on the secure lock screen.
+* *Platform Note: Android 5.0+ restricts arbitrary third-party interactive home-screen widgets directly on system lock screens. The Quick Settings Tile and Public Notification represent the closest officially supported Android mechanisms.*
+
+### 11. 100% Local-Only Architecture
+* Runs completely on-device using Android native components (`SharedPreferences`, `AlarmManager`, `BroadcastReceiver`, `FusedLocationProviderClient`, and `SmsManager`).
+* No network server, cloud database, or third-party authentication required.
+
+---
+
+## 📦 APK Versioning
+
+Kaiko follows sequential application-level versioning. Each generated APK is versioned sequentially and represents the overall application update:
+
+* `v0.0.1` — Initial prototype.
+* `v0.0.2` — Multi-guardian escalation, state machine, and disguised widget update.
+* `v0.0.3` — Sequential future update.
+
+### Release APK Artifact Naming
+Release builds automatically generate version-named APK artifacts:
+```
+Kaiko-v<versionName>.apk
+```
+* Current output artifact: `app/build/outputs/apk/release/Kaiko-v0.0.2.apk`
 
 ---
 
@@ -14,115 +115,141 @@ When activated, the shared `TriggerManager` fetches high-accuracy GPS coordinate
 
 ```
 Kaiko/
-├── build.gradle.kts                      # Root Gradle build script
-├── settings.gradle.kts                   # Project module definitions
-├── gradle.properties                     # JVM and AndroidX configuration
+├── build.gradle.kts                            # Root Gradle build script
+├── settings.gradle.kts                         # Project module definitions
+├── gradle.properties                           # JVM and AndroidX settings
 └── app/
-    ├── build.gradle.kts                  # App build configuration & dependencies
-    ├── proguard-rules.pro                # Proguard rules
+    ├── build.gradle.kts                        # App build configuration, versionCode 2, versionName "0.0.2"
+    ├── proguard-rules.pro                      # Proguard configuration
     └── src/
         └── main/
-            ├── AndroidManifest.xml       # Manifest with components and permission declarations
+            ├── AndroidManifest.xml             # Components, permissions, and receiver declarations
             ├── java/com/yourname/kaiko/
-            │   ├── MainActivity.kt               # Onboarding UI, permission requests, & status check
-            │   ├── KaikoAccessibilityService.kt  # Background listener for 3x Volume-Down presses
-            │   ├── KaikoWidgetProvider.kt        # 1x1 Home Screen SOS Widget provider
-            │   └── TriggerManager.kt             # Shared trigger action, GPS, SMS, & Notification
+            │   ├── MainActivity.kt             # Multi-guardian UI, delay selector, and active SOS banner
+            │   ├── TriggerManager.kt           # Central orchestrator, escalation chain, & SMS dispatcher
+            │   ├── SosState.kt                 # 13-state emergency lifecycle enum and data models
+            │   ├── KaikoAccessibilityService.kt# Background listener for 3x Volume-Down key presses
+            │   ├── KaikoWidgetProvider.kt      # Direct 1x1 Home Screen SOS Widget provider
+            │   ├── KaikoDisguisedWidgetProvider.kt # Neutral Disguised "Daily Memo" widget provider
+            │   ├── KaikoTileService.kt         # Quick Settings Tile for lock-screen pull-down access
+            │   ├── EscalationReceiver.kt       # AlarmManager receiver for escalation timeouts
+            │   ├── SmsSentReceiver.kt          # Carrier SMS result handler with single-retry logic
+            │   └── ActionReceiver.kt           # Notification action handler ("I'm Safe Now" & Test Ack)
             └── res/
                 ├── drawable/
-                │   ├── bg_button_primary.xml     # Gradient primary button
-                │   ├── bg_button_secondary.xml   # Secondary action button
-                │   ├── bg_card.xml               # Modern slate card background
-                │   ├── bg_input.xml              # Text input container background
-                │   ├── bg_widget.xml             # Radial glowing SOS widget circle
-                │   ├── ic_shield.xml             # Shield icon
-                │   └── ic_sos.xml                # SOS vector icon
+                │   ├── bg_button_primary.xml   # Primary action button background
+                │   ├── bg_button_secondary.xml # Secondary action button background
+                │   ├── bg_card.xml             # Slate card container background
+                │   ├── bg_input.xml            # Phone input box background
+                │   ├── ic_sos.xml              # SOS icon
+                │   ├── ic_memo.xml             # Neutral memo icon for disguised widget
+                │   ├── widget_background.xml   # 16dp rounded corner SOS widget background
+                │   └── widget_disguised_background.xml # Neutral disguised widget background
                 ├── layout/
-                │   ├── activity_main.xml         # Clean single-screen onboarding layout
-                │   └── widget_layout.xml         # 1x1 SOS Widget layout
+                │   ├── activity_main.xml       # Scrollable configuration and emergency dashboard
+                │   ├── widget_layout.xml       # Direct SOS widget layout
+                │   └── widget_disguised_layout.xml # Disguised "Daily Memo" widget layout
                 ├── values/
-                │   ├── colors.xml                # Dark modern palette
-                │   ├── strings.xml               # UI text and accessibility descriptions
-                │   └── themes.xml                # Material theme definition
+                │   ├── colors.xml              # Dark modern UI palette
+                │   ├── strings.xml             # UI labels, widget titles, and descriptions
+                │   └── themes.xml              # App theme definitions
                 └── xml/
-                    ├── accessibility_service_config.xml # Key event filtering service config
-                    └── widget_info.xml                  # 1x1 AppWidgetProvider metadata
+                    ├── accessibility_service_config.xml # Key event filtering service configuration
+                    ├── widget_info.xml                  # Direct SOS widget metadata
+                    └── widget_disguised_info.xml        # Disguised widget metadata
 ```
 
 ---
 
 ## 🛡️ Permissions & Rationale
 
-| Permission | Reason Needed |
+| Permission | Purpose |
 | :--- | :--- |
-| `android.permission.SEND_SMS` | Dispatches the emergency SMS message containing coordinates directly to the guardian's phone number. |
-| `android.permission.ACCESS_FINE_LOCATION` | Queries high-accuracy GPS coordinates (`latitude`, `longitude`) via `FusedLocationProviderClient`. |
-| `android.permission.ACCESS_COARSE_LOCATION` | Provides fallback cell/Wi-Fi approximate location if GPS signal is weak indoors. |
-| `android.permission.POST_NOTIFICATIONS` | Allows displaying confirmation notifications on Android 13+ (API level 33+). |
-| `android.permission.BIND_ACCESSIBILITY_SERVICE` | Required system permission to register `KaikoAccessibilityService` as a hardware key listener. |
+| `android.permission.SEND_SMS` | Dispatches distress SMS with location coordinates to configured guardians. |
+| `android.permission.ACCESS_FINE_LOCATION` | Queries high-accuracy GPS coordinates via `FusedLocationProviderClient`. |
+| `android.permission.ACCESS_COARSE_LOCATION` | Fallback approximate location if GPS signal is weak indoors. |
+| `android.permission.POST_NOTIFICATIONS` | Displays persistent lock-screen status and action notifications (Android 13+). |
+| `android.permission.VIBRATE` | Provides tactile feedback when emergency triggers are activated. |
+| `android.permission.BIND_ACCESSIBILITY_SERVICE` | Required by Android to register the hardware button listener. |
+| `android.permission.BIND_QUICK_SETTINGS_TILE` | Enables the lock-screen Quick Settings Tile. |
 
 ---
 
-## ⚙️ Debug Mode & Testing Safely
+## ⚙️ Safe Testing: DEBUG_MODE
 
-In `TriggerManager.kt`, you will find:
+In `TriggerManager.kt`, safe testing is controlled by:
 ```kotlin
-const val DEBUG_MODE = true
+// Set to true for safe testing (no real SMS sent).
+// Set to false to send actual SMS alerts.
+const val DEBUG_MODE = false
 ```
 
-- **When `DEBUG_MODE = true` (Default):**
-  - **No carrier SMS is sent** (prevents carrier fees or accidental real alerts during testing).
-  - The exact message and coordinates that *would* have been sent are logged to Logcat.
-  - The confirmation notification **is still shown**, allowing full visual verification on your phone.
-- **When `DEBUG_MODE = false`:**
-  - Sends a real SMS to the configured guardian number via `SmsManager`.
+* **When `DEBUG_MODE = true`:**
+  * No real cellular SMS messages are sent (prevents carrier fees during testing).
+  * SMS payloads and coordinates are logged to Logcat under tag `KAIKO_DEBUG`.
+  * The state machine, notifications, and escalation timers run normally.
+* **When `DEBUG_MODE = false`:**
+  * Real SMS messages are dispatched to configured guardians via `SmsManager`.
 
 ---
 
-## 📱 How to Test on a Physical Android Device
+## 📱 Setup and Testing Guide
 
-### Step 1: Open in Android Studio & Deploy
-1. Open Android Studio -> **File** -> **Open** -> Select `d:\Kaiko`.
-2. Connect your physical Android phone with **USB Debugging** enabled.
-3. Click **Run 'app'** (`Shift + F10`).
+### 1. Build and Deploy
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/mohamedtharika25am-byte/Kaiko.git
+   ```
+2. Open the project in **Android Studio**.
+3. Connect an Android device with **USB Debugging** enabled.
+4. Run the app (`Shift + F10`) or install the release APK:
+   ```bash
+   adb install app/build/outputs/apk/release/Kaiko-v0.0.2.apk
+   ```
 
-### Step 2: Configure Onboarding
-1. Enter your guardian's phone number (e.g. `+15551234567`).
-2. Tap **"Save & Enable"** -> Grant the requested runtime permissions (**Location**, **SMS**, and **Notifications**).
-3. Tap **"Enable Accessibility Service"** -> In Android Settings, find **Kaiko Emergency Trigger Listener** and toggle it **ON**.
-4. Return to the Kaiko app and verify the status text reads `● Accessibility Service: Enabled` in green.
+### 2. Initial Configuration
+1. Enter **Guardian 1** phone number (Mandatory).
+2. Optionally enter **Guardian 2**, **Guardian 3**, and a **Backup Helpline**.
+3. Select an **Escalation Delay** (choose **30s** or **60s** for testing).
+4. Tap **"Save & Enable"** and grant runtime permissions (SMS, Location, Notifications).
+5. Tap **"Enable Accessibility Service"** -> In Android Settings, turn **Kaiko Emergency Trigger Listener** ON.
 
-### Step 3: Test Hardware Trigger (Triple Volume-Down)
-1. Even with the screen locked or inside any other app, press the physical **Volume Down** button **3 times within 2 seconds**.
-2. Notice the notification appears: **"Help alert sent"** displaying your current GPS coordinates.
-3. Try pressing Volume Down again immediately — observe the 5-second cooldown preventing duplicate triggers.
-
-### Step 4: Test Home Screen Widget
-1. Long-press on your phone's Home Screen -> Select **Widgets**.
-2. Find **Kaiko** and drag the 1x1 **SOS** widget onto your home screen.
-3. Tap the **SOS** widget once.
-4. The same trigger fires instantly, acquiring location and showing the confirmation notification.
+### 3. Verification Steps
+* **Hardware Trigger:** Press the physical **Volume Down** button 3 times within 2 seconds. Verify that the SOS banner appears and the countdown starts.
+* **Direct Widget:** Add the "Kaiko SOS" widget to the home screen and tap it.
+* **Disguised Widget:** Add the "Daily Memo" widget to the home screen and tap it. Verify that it triggers the emergency workflow without displaying emergency branding.
+* **Escalation Countdown:** Observe the state machine advance from Guardian 1 to Guardian 2 after the timeout expires.
+* **Simulated Ack:** Tap **"Simulate Guardian Ack [TEST ONLY]"** to verify that escalation immediately stops.
+* **"I'm Safe Now":** Trigger an alert and tap **"I'm Safe Now"** to confirm that pending escalation is safely cancelled and the status transitions to `USER_MARKED_SAFE`.
 
 ---
 
-## 🔍 Logcat Debugging
+## 🔍 Logcat Monitoring
 
-Filter your Logcat in Android Studio using the tag:
+Filter Logcat output in Android Studio using the tag:
 ```
 KAIKO_DEBUG
 ```
 
-**Example Log Output:**
-```
-D/KAIKO_DEBUG: Volume Down pressed: count = 1 / 3 in sliding window
-D/KAIKO_DEBUG: Volume Down pressed: count = 2 / 3 in sliding window
-D/KAIKO_DEBUG: Volume Down pressed: count = 3 / 3 in sliding window
-D/KAIKO_DEBUG: --> TRIGGER CONDITION MET: 3 Volume Down presses in < 2000ms. Dispatching alert!
-D/KAIKO_DEBUG: --------------------------------------------------
-D/KAIKO_DEBUG: [2026-08-31 18:00:00] EMERGENCY TRIGGER ACTIVATED from source: 'volume_button'
-D/KAIKO_DEBUG: Location acquired successfully: 37.4220, -122.0841 (accuracy: 12.0m)
-I/KAIKO_DEBUG: [DEBUG MODE ACTIVE] Would have sent SMS to +15551234567: "I need help. My location: 37.4220, -122.0841 https://maps.google.com/?q=37.4220,-122.0841"
-D/KAIKO_DEBUG: System notification posted successfully.
-D/KAIKO_DEBUG: Trigger Event Summary: timestamp=1788180000000 (2026-08-31 18:00:00), source=volume_button, locationSuccess=true, coords=37.4220, -122.0841, smsSuccess=SKIPPED_DEBUG_MODE
-D/KAIKO_DEBUG: --------------------------------------------------
-```
+---
+
+## 📜 Version History
+
+### `v0.0.1`
+* Initial Kaiko emergency safety prototype.
+* Triple-press Volume Down hardware trigger via background Accessibility Service.
+* High-accuracy Fused Location Provider with 3-second timeout.
+* Direct 1x1 Home Screen SOS widget.
+* Single guardian SMS dispatch with `DEBUG_MODE` support.
+
+### `v0.0.2`
+* Upgraded to sequential versioning (`versionCode = 2`, `versionName = "0.0.2"`).
+* Multiple Guardian support: Guardian 1 (mandatory), Guardian 2 (optional), Guardian 3 (optional), and backup helpline.
+* Local 13-state emergency SOS state machine (`SosState`).
+* Automatic background escalation chain with configurable timeouts (30s, 60s, 120s).
+* "I'm Safe Now" cancel action in app and ongoing notification.
+* SMS carrier send status tracking with single-retry and immediate escalation on retry failure.
+* Simulated Guardian Acknowledgement for on-device state machine testing.
+* Disguised / Neutral "Daily Memo" 1x1 home screen widget.
+* Android Quick Settings Tile for lock-screen quick access.
+* 100% local, self-contained Android architecture.
