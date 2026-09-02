@@ -34,11 +34,9 @@ class MainActivity : AppCompatActivity() {
     private val requestPermissionsLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-        val smsGranted = permissions[Manifest.permission.SEND_SMS] ?: false
-
-        val locationGranted = fineLocationGranted || coarseLocationGranted
+        val locationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        val smsGranted = permissions[Manifest.permission.SEND_SMS] == true
 
         if (locationGranted && smsGranted) {
             Toast.makeText(this, "Permissions granted successfully!", Toast.LENGTH_SHORT).show()
