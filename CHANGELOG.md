@@ -2,6 +2,33 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.3.4] - 2026-09-06
+### Location Toggle Fix
+- 3x Press & Normal Widget: Uses DEFAULT native Android/Google location request dialog (`ResolvableApiException.startResolutionForResult`) directly over whatever screen the user is currently on via transparent `LocationPromptActivity`.
+- Never opens `MainActivity` or shows Kaiko main app UI on 3x press or normal widget trigger.
+- No custom dialog created; strictly uses the default native Android/Google system resolution prompt.
+- GPS ON: Skips request, acquires current location, and sends SOS SMS with Maps coordinate link (`https://maps.google.com/?q=LATITUDE,LONGITUDE`).
+- User turns GPS ON: Re-checks GPS is ON, acquires current location, and sends SOS SMS with Maps coordinate link.
+- User DENY / CLOSE / IGNORE: Waits FULL 5 seconds before sending SOS SMS without location.
+- Preserved all previous releases (v1.2.1, v1.2.2, v1.3.0, v1.3.1, v1.3.2, v1.3.3) and generated `release/v1.3.4/Kaiko-v1.3.4.apk`
+
+## [v1.3.3] - 2026-09-06
+### Location Flow on Current Screen
+- Implemented transparent LocationPromptActivity to request Android Location Services / GPS Toggle directly from the current screen/context without opening the full Kaiko app UI for 3x Press and Normal Widget
+- Enforced strict 5-second rule: if user denies/ignores, wait until maximum 5 seconds before sending SOS without location
+- Re-check that Location Services / GPS is actually ON upon user acceptance before getting current location
+- Ensured location is never treated as unavailable immediately after user accepts GPS toggle
+- Preserved all previous releases (v1.2.1, v1.2.2, v1.3.0, v1.3.1, v1.3.2) and created release/v1.3.3/Kaiko-v1.3.3.apk
+
+## [v1.3.2] - 2026-09-06
+### Location Flow Fix Only
+- Fixed Location Permission flow: if permission is already ON, skip permission request and directly check GPS Toggle
+- Fixed Android Location Services / GPS Toggle flow: if GPS Toggle is already ON, skip toggle request and immediately get current location
+- Fixed GPS Toggle acceptance: after user turns GPS ON, re-checks GPS state and obtains current location instead of immediately treating as unavailable
+- Dedicated acquisition timeout ensures GPS coordinates are acquired after turning GPS toggle ON
+- Prevented duplicate/premature permission or location prompts from MainActivity SOS button
+- Preserved all previous releases (v1.2.1, v1.2.2, v1.3.0, v1.3.1) and created release/v1.3.2/Kaiko-v1.3.2.apk
+
 ## [v1.3.1] - 2026-09-06
 ### Location Flow Only
 - Implemented strict location permission check for normal SOS triggers (3x Press, Normal Widget, App SOS Button)

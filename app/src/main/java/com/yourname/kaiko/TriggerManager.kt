@@ -844,13 +844,20 @@ object TriggerManager {
      */
     fun isLocationServiceEnabled(context: Context): Boolean {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
-        return LocationManagerCompat.isLocationEnabled(lm)
+        return LocationManagerCompat.isLocationEnabled(lm) ||
+                lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     /**
      * Requests Android location permission by launching MainActivity or broadcasting.
+     * Skips request if permission is already ON.
      */
     fun requestLocationPermission(context: Context) {
+        if (hasLocationPermission(context)) {
+            Log.d(TAG, "requestLocationPermission: Permission is already ON. Skipping.")
+            return
+        }
         try {
             val intent = Intent(context, MainActivity::class.java).apply {
                 action = ACTION_REQUEST_LOCATION_PERMISSION
@@ -869,113 +876,142 @@ object TriggerManager {
     }
 
     /**
-     * Requests user to turn ON Android Location Services / GPS Toggle via MainActivity or broadcasting.
+     * Requests user to turn ON Android Location Services / GPS Toggle via transparent LocationPromptActivity.
+     * Uses the default native Android/Google location request dialog directly over current screen.
+     * Skips request if GPS Toggle is already ON. Does NOT open MainActivity.
      */
     fun requestLocationSettings(context: Context) {
+        if (isLocationServiceEnabled(context)) {
+            Log.d(TAG, "requestLocationSettings: GPS Toggle is already ON. Skipping.")
+            return
+        }
         try {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                action = ACTION_REQUEST_LOCATION_SETTINGS
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val intent = Intent(context, LocationPromptActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start MainActivity for location settings: ${e.message}")
-        }
-        try {
-            val broadcast = Intent(ACTION_REQUEST_LOCATION_SETTINGS).setPackage(context.packageName)
-            context.sendBroadcast(broadcast)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to broadcast location settings request: ${e.message}")
+            Log.e(TAG, "Failed to start LocationPromptActivity for location settings: ${e.message}")
         }
     }
 
     /**
-     * Executes the strict Location Flow for Normal SOS Triggers (v1.3.1):
+     * Executes the strict Location Flow for Normal SOS Triggers (v1.3.4):
      * 1. 3x Press Trigger
      * 2. Normal Widget Trigger
      * 3. App SOS Button
      *
      * Flow:
-     * Trigger
-     * -> Location Permission check (If OFF: request permission, wait max 5s)
-     * -> Android Location Services / GPS Toggle check (If OFF: request user turn ON, wait max 5s)
-     * -> Try to obtain current GPS coordinates (regardless of network status)
-     * -> Return location or null (within the strict 5-second total safety limit).
+     * 1. KAIKO LOCATION PERMISSION
+     *    - If already ON: SKIP permission request -> Go directly to GPS Toggle check.
+     *    - If OFF: Request location permission -> Wait FULL 5s.
+     *      - User ACCEPTS -> Continue to GPS Toggle check.
+     *      - User DENIES / IGNORES -> After FULL 5s, send SOS WITHOUT location.
+     *
+     * 2. ANDROID LOCATION SERVICES / GPS TOGGLE
+     *    - If already ON: SKIP toggle request -> Immediately get CURRENT location.
+     *    - If OFF: Default native Android/Google location request directly over current screen.
+     *      - User ACCEPTS / turns GPS ON -> Re-check that GPS is actually ON -> Get CURRENT location -> SOS + Maps link.
+     *      - User DENIES / CLOSES / IGNORES -> Wait FULL 5 seconds -> Send SOS WITHOUT location.
+     *
+     * 3. CURRENT LOCATION ACQUISITION
+     *    - Never treat location as unavailable immediately after accepting GPS toggle.
+     *    - Re-check GPS state and obtain current location with full acquisition window.
      */
-    suspend fun resolveNormalSosLocation(
-        context: Context,
-        safetyTimeoutMs: Long = LOCATION_SAFETY_TIMEOUT_MS
-    ): Location? {
-        val startTime = System.currentTimeMillis()
+    suspend fun resolveNormalSosLocation(context: Context): Location? {
+        Log.d(TAG, "Starting Normal SOS location flow (v1.3.4)...")
 
-        fun remainingTime(): Long {
-            val elapsed = System.currentTimeMillis() - startTime
-            return (safetyTimeoutMs - elapsed).coerceAtLeast(0L)
-        }
-
-        Log.d(TAG, "Starting Normal SOS location flow (5s safety limit: ${safetyTimeoutMs}ms)...")
-
-        // 1. KAIKO LOCATION PERMISSION?
-        var permissionGranted = hasLocationPermission(context)
-        if (!permissionGranted) {
-            Log.w(TAG, "KAIKO LOCATION PERMISSION: OFF. Requesting Android location permission...")
+        // 1. KAIKO LOCATION PERMISSION
+        if (hasLocationPermission(context)) {
+            Log.i(TAG, "STEP 1: Kaiko location permission is already ON. SKIPPING permission request.")
+        } else {
+            Log.w(TAG, "STEP 1: Kaiko location permission is OFF. Requesting permission (max 5s)...")
             requestLocationPermission(context)
 
-            // Wait up to remaining time (max 5s safety limit)
-            while (remainingTime() > 0L) {
+            val permStartTime = System.currentTimeMillis()
+            var granted = false
+            while (System.currentTimeMillis() - permStartTime < 5000L) {
                 delay(200)
                 if (hasLocationPermission(context)) {
-                    permissionGranted = true
-                    Log.i(TAG, "User GRANTED Kaiko Location Permission!")
+                    granted = true
+                    Log.i(TAG, "STEP 1: User ACCEPTED Kaiko location permission!")
                     break
                 }
             }
 
-            if (!permissionGranted) {
-                Log.w(TAG, "User denied or ignored location permission within 5s safety limit. Proceeding WITHOUT location.")
+            if (!granted) {
+                val elapsedPerm = System.currentTimeMillis() - permStartTime
+                if (elapsedPerm < 5000L) {
+                    delay(5000L - elapsedPerm)
+                }
+                Log.w(TAG, "STEP 1: User DENIED or IGNORED location permission after FULL 5s. SEND SOS WITHOUT LOCATION.")
                 return null
             }
-        } else {
-            Log.i(TAG, "KAIKO LOCATION PERMISSION: ALREADY ON.")
         }
 
-        // 2. ANDROID LOCATION SERVICES / GPS TOGGLE?
-        var locationServicesEnabled = isLocationServiceEnabled(context)
-        if (!locationServicesEnabled) {
-            Log.w(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: OFF. Requesting user to turn ON...")
+        // 2. ANDROID LOCATION SERVICES / GPS TOGGLE
+        if (isLocationServiceEnabled(context)) {
+            Log.i(TAG, "STEP 2: Android Location Services / GPS Toggle is already ON. SKIPPING toggle request.")
+        } else {
+            Log.w(TAG, "STEP 2: Android Location Services / GPS Toggle is OFF. Launching default native Google dialog over current screen (max 5s)...")
             requestLocationSettings(context)
 
-            // Wait up to remaining time (max 5s safety limit)
-            while (remainingTime() > 0L) {
+            val gpsStartTime = System.currentTimeMillis()
+            var enabled = false
+            while (System.currentTimeMillis() - gpsStartTime < 5000L) {
                 delay(200)
                 if (isLocationServiceEnabled(context)) {
-                    locationServicesEnabled = true
-                    Log.i(TAG, "User turned ON Android Location Services / GPS Toggle!")
+                    enabled = true
+                    Log.i(TAG, "STEP 2: User ACCEPTED / turned GPS ON!")
                     break
                 }
             }
 
-            if (!locationServicesEnabled) {
-                Log.w(TAG, "User denied, closed, or ignored GPS toggle request within 5s safety limit. Proceeding WITHOUT location.")
+            if (!enabled) {
+                // Short wait to re-check in case settings change takes a moment to propagate
+                delay(300)
+                if (isLocationServiceEnabled(context)) {
+                    enabled = true
+                    Log.i(TAG, "STEP 2: User turned GPS ON (confirmed on re-check)!")
+                }
+            }
+
+            if (!enabled) {
+                // Wait FULL 5 seconds if loop or re-check ended earlier
+                val elapsedGps = System.currentTimeMillis() - gpsStartTime
+                if (elapsedGps < 5000L) {
+                    delay(5000L - elapsedGps)
+                }
+                Log.w(TAG, "STEP 2: User DENIED, CLOSED, or IGNORED GPS toggle request after FULL 5s. SEND SOS WITHOUT LOCATION.")
                 return null
             }
-        } else {
-            Log.i(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: ALREADY ON.")
         }
 
-        // 3. GPS LOCATION ACQUISITION
-        val fetchBudget = remainingTime()
-        if (fetchBudget <= 0L) {
-            Log.w(TAG, "5-second safety limit reached before location acquisition. Proceeding WITHOUT location.")
+        // 3. CURRENT LOCATION ACQUISITION
+        // After user accepts GPS Toggle request, NEVER treat location as unavailable immediately.
+        // Re-check that Location Services / GPS is actually ON
+        var gpsConfirmed = isLocationServiceEnabled(context)
+        if (!gpsConfirmed) {
+            for (i in 1..5) {
+                delay(200)
+                if (isLocationServiceEnabled(context)) {
+                    gpsConfirmed = true
+                    break
+                }
+            }
+        }
+
+        if (!gpsConfirmed) {
+            Log.w(TAG, "STEP 3: Location Services / GPS re-check failed. Location Services is OFF. SEND SOS WITHOUT LOCATION.")
             return null
         }
 
-        Log.i(TAG, "Acquiring GPS coordinates with remaining budget: ${fetchBudget}ms...")
-        val location = fetchFreshLocationWithFallback(context, fetchBudget)
+        Log.i(TAG, "STEP 3: Location Services / GPS confirmed ON. Acquiring CURRENT GPS location...")
+        val location = fetchFreshLocationWithFallback(context, 5000L)
         if (location != null) {
-            Log.i(TAG, "GPS coordinates obtained: ${location.latitude}, ${location.longitude}")
+            Log.i(TAG, "STEP 3: CURRENT GPS coordinates obtained: ${location.latitude},${location.longitude}")
         } else {
-            Log.w(TAG, "GPS coordinates unavailable within safety limit. Proceeding WITHOUT location.")
+            Log.w(TAG, "STEP 3: GPS coordinates unavailable within timeout. Proceeding WITHOUT location.")
         }
         return location
     }

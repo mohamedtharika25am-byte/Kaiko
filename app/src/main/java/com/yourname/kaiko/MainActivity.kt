@@ -233,12 +233,6 @@ class MainActivity : AppCompatActivity() {
 
         // Manual Test SOS Trigger (App SOS Button)
         binding.btnManualTestTrigger.setOnClickListener {
-            if (!TriggerManager.hasLocationPermission(this)) {
-                requestAppPermissions()
-            }
-            if (!TriggerManager.isLocationServiceEnabled(this)) {
-                promptLocationServices()
-            }
             TriggerManager.fireAlert(this, TriggerManager.TRIGGER_MANUAL_APP)
             updateActiveSosBanner()
         }
@@ -248,6 +242,9 @@ class MainActivity : AppCompatActivity() {
      * Prompts the user to enable system location services (GPS toggle).
      */
     fun promptLocationServices() {
+        if (TriggerManager.isLocationServiceEnabled(this)) {
+            return
+        }
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY, 5000L
         ).build()
@@ -296,6 +293,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestAppPermissions() {
+        if (TriggerManager.hasLocationPermission(this)) {
+            return
+        }
         val permissions = mutableListOf(
             Manifest.permission.SEND_SMS,
             Manifest.permission.ACCESS_FINE_LOCATION,

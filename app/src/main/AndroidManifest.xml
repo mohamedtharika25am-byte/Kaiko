@@ -58,6 +58,16 @@
             </intent-filter>
         </activity>
 
+        <!-- Transparent activity to prompt for Location Services / GPS directly on current screen -->
+        <activity
+            android:name=".LocationPromptActivity"
+            android:theme="@style/Theme.Transparent"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTask" />
+
         <!-- 
             ====================================================================
             2. HARDWARE BUTTON LISTENER ACCESSIBILITY SERVICE
