@@ -7,7 +7,7 @@
     <!-- Onboarding UI Strings -->
     <string name="guardian_phone_label">Guardian Phone Number</string>
     <string name="guardian_phone_hint">e.g., +15551234567</string>
-    <string name="btn_save_and_enable">Save &amp; Enable</string>
+    <string name="btn_save_and_enable">Save Contacts &amp; Settings</string>
     <string name="btn_open_accessibility">Enable Accessibility Service</string>
     <string name="status_accessibility_enabled">● Accessibility Service: Enabled</string>
     <string name="status_accessibility_disabled">● Accessibility Service: Disabled (Tap below to enable)</string>

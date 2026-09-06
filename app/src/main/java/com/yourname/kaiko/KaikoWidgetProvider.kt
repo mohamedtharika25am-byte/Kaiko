@@ -36,7 +36,7 @@ class KaikoWidgetProvider : AppWidgetProvider() {
         if (intent.action == ACTION_TRIGGER_WIDGET) {
             Log.d(TAG, "Home screen SOS widget tapped. Initiating emergency alert via widget...")
             // Invoke shared trigger action
-            TriggerManager.fireAlert(context, "widget")
+            TriggerManager.fireAlert(context, TriggerManager.TRIGGER_QUICK_ACCESS)
         }
     }
 

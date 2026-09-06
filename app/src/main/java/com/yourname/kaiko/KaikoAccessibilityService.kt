@@ -84,7 +84,7 @@ class KaikoAccessibilityService : AccessibilityService() {
             pressTimestamps.clear()
 
             // Fire shared trigger action
-            TriggerManager.fireAlert(applicationContext, "volume_button")
+            TriggerManager.fireAlert(applicationContext, TriggerManager.TRIGGER_HARDWARE_BUTTON)
         }
     }
 

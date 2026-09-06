@@ -11,8 +11,8 @@ android {
         applicationId = "com.yourname.kaiko"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.0.2"
+        versionCode = 4
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -65,4 +65,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    testImplementation("junit:junit:4.13.2")
 }

@@ -34,7 +34,7 @@ class KaikoDisguisedWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         if (intent.action == ACTION_TRIGGER_DISGUISED_WIDGET) {
             Log.d(TAG, "Disguised memo widget tapped. Initiating emergency alert flow...")
-            TriggerManager.fireAlert(context, "disguised_widget")
+            TriggerManager.fireAlert(context, TriggerManager.TRIGGER_DISCREET_SAFETY)
         }
     }
 

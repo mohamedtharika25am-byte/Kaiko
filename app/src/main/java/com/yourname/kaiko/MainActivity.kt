@@ -17,25 +17,34 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
 import com.yourname.kaiko.databinding.ActivityMainBinding
 
 /**
- * Onboarding and Configuration Activity for Kaiko (v0.0.2).
+ * Onboarding and Configuration Activity for Kaiko (v1.3.0).
  * Supports:
  * 1. Multi-Guardian Configuration (Guardian 1 mandatory, Guardians 2 & 3 optional, Final contact optional).
  * 2. Escalation Delay Configuration (30s, 60s, 120s for testing).
  * 3. Real-time Active Emergency banner with "I'm Safe Now" and "Simulate Ack [TEST]" actions.
- * 4. Runtime permission requests and Accessibility Service status check.
+ * 4. Runtime permission requests and Android Location Services / GPS Toggle handling.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
 
-    // Receiver to update UI live when SOS state changes
+    // Receiver to update UI live when SOS state changes or location setup is requested
     private val stateChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            updateActiveSosBanner()
+            when (intent?.action) {
+                TriggerManager.ACTION_STATE_CHANGED -> updateActiveSosBanner()
+                TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION -> requestAppPermissions()
+                TriggerManager.ACTION_REQUEST_LOCATION_SETTINGS -> promptLocationServices()
+            }
         }
     }
 
@@ -75,8 +84,12 @@ class MainActivity : AppCompatActivity() {
         updateAccessibilityStatus()
         updateActiveSosBanner()
 
-        // Register state change receiver
-        val filter = IntentFilter(TriggerManager.ACTION_STATE_CHANGED)
+        // Register state change and location setup request receivers
+        val filter = IntentFilter().apply {
+            addAction(TriggerManager.ACTION_STATE_CHANGED)
+            addAction(TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION)
+            addAction(TriggerManager.ACTION_REQUEST_LOCATION_SETTINGS)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(stateChangeReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -92,6 +105,7 @@ class MainActivity : AppCompatActivity() {
             // Ignored if not registered
         }
     }
+
 
     private fun loadSavedConfiguration() {
         // Guardian 1 (Preserves existing data from KEY_GUARDIAN_PHONE)
@@ -206,10 +220,45 @@ class MainActivity : AppCompatActivity() {
 
         // Manual Test SOS Trigger
         binding.btnManualTestTrigger.setOnClickListener {
-            TriggerManager.fireAlert(this, "manual_app_test")
+            if (!TriggerManager.hasLocationPermission(this)) {
+                requestAppPermissions()
+            }
+            if (!TriggerManager.isLocationServiceEnabled(this)) {
+                promptLocationServices()
+            }
+            TriggerManager.fireAlert(this, TriggerManager.TRIGGER_MANUAL_APP)
             updateActiveSosBanner()
         }
     }
+
+    /**
+     * Prompts the user to enable system location services (GPS toggle).
+     */
+    fun promptLocationServices() {
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY, 5000L
+        ).build()
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+        val client = LocationServices.getSettingsClient(this)
+        client.checkLocationSettings(builder.build())
+            .addOnFailureListener { exception ->
+                if (exception is ResolvableApiException) {
+                    try {
+                        exception.startResolutionForResult(this, 1002)
+                    } catch (e: Exception) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                        } catch (ign: Exception) {}
+                    }
+                } else {
+                    try {
+                        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    } catch (ign: Exception) {}
+                }
+            }
+    }
+
 
     private fun updateActiveSosBanner() {
         val currentState = TriggerManager.getCurrentState(this)

@@ -34,7 +34,7 @@ class KaikoTileService : TileService() {
         tile?.updateTile()
 
         // Trigger the emergency SOS alert
-        TriggerManager.fireAlert(applicationContext, "quick_settings_tile")
+        TriggerManager.fireAlert(applicationContext, TriggerManager.TRIGGER_QUICK_ACCESS)
 
         // Reset tile state after trigger
         tile?.state = Tile.STATE_INACTIVE
