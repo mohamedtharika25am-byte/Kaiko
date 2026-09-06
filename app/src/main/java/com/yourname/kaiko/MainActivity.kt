@@ -25,7 +25,7 @@ import com.google.android.gms.location.Priority
 import com.yourname.kaiko.databinding.ActivityMainBinding
 
 /**
- * Onboarding and Configuration Activity for Kaiko (v1.3.0).
+ * Onboarding and Configuration Activity for Kaiko (v1.3.1).
  * Supports:
  * 1. Multi-Guardian Configuration (Guardian 1 mandatory, Guardians 2 & 3 optional, Final contact optional).
  * 2. Escalation Delay Configuration (30s, 60s, 120s for testing).
@@ -77,6 +77,20 @@ class MainActivity : AppCompatActivity() {
         loadSavedConfiguration()
         setupListeners()
         updateActiveSosBanner()
+        handleIncomingAction(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingAction(intent)
+    }
+
+    private fun handleIncomingAction(intent: Intent?) {
+        when (intent?.action) {
+            TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION -> requestAppPermissions()
+            TriggerManager.ACTION_REQUEST_LOCATION_SETTINGS -> promptLocationServices()
+        }
     }
 
     override fun onResume() {
@@ -84,7 +98,7 @@ class MainActivity : AppCompatActivity() {
         updateAccessibilityStatus()
         updateActiveSosBanner()
 
-        // Register state change and location setup request receivers
+        // Register state change receiver and location setup actions
         val filter = IntentFilter().apply {
             addAction(TriggerManager.ACTION_STATE_CHANGED)
             addAction(TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION)
@@ -105,7 +119,6 @@ class MainActivity : AppCompatActivity() {
             // Ignored if not registered
         }
     }
-
 
     private fun loadSavedConfiguration() {
         // Guardian 1 (Preserves existing data from KEY_GUARDIAN_PHONE)
@@ -218,7 +231,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Simulated Guardian Acknowledgement recorded.", Toast.LENGTH_SHORT).show()
         }
 
-        // Manual Test SOS Trigger
+        // Manual Test SOS Trigger (App SOS Button)
         binding.btnManualTestTrigger.setOnClickListener {
             if (!TriggerManager.hasLocationPermission(this)) {
                 requestAppPermissions()
@@ -259,6 +272,13 @@ class MainActivity : AppCompatActivity() {
             }
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1002 && resultCode == RESULT_OK) {
+            Toast.makeText(this, "Location services enabled", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private fun updateActiveSosBanner() {
         val currentState = TriggerManager.getCurrentState(this)

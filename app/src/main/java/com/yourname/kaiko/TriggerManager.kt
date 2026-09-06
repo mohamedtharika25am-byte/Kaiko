@@ -11,8 +11,6 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -21,13 +19,13 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -39,16 +37,15 @@ import java.util.UUID
 import kotlin.coroutines.resume
 
 /**
- * Central Orchestrator & State Machine for Kaiko Emergency Operations (v1.3.0).
+ * Central Orchestrator & State Machine for Kaiko Emergency Operations (v1.2.1).
  * Features:
  * 1. Single central SOS pipeline for all triggers (App, 3x Volume, Normal Widget, Discreet Widget).
- * 2. Strict location hierarchy: Permission -> Android Location Services / GPS Toggle -> Network -> Live/Coordinate Fallback.
- * 3. 5-Second safety limit: SOS send is high priority, never blocked by location setup.
- * 4. Discreet widget silent execution (no popups, zero delay if permission/services off).
- * 5. Fresh location attempt for each guardian escalation step (G1, G2, G3) with explicit "Last known location" labeling.
- * 6. Active location session management stopped immediately upon "I'm Safe Now" or Test ACK.
- * 7. Duplicate SOS session protection across all triggers.
- * 8. Targeted resolution updates sent only to guardians contacted during the current session.
+ * 2. Strict location handling with 3-5s timeout and resilient fallbacks.
+ * 3. Discreet widget silent execution (no permission popups, no obvious local emergency notification).
+ * 4. Fresh location attempt for each guardian escalation step (G1, G2, G3) with explicit "Last known location" labeling.
+ * 5. Tracking of alerted guardians per SOS event with targeted "I'm Safe Now" and "Test ACK" updates.
+ * 6. Clean event state lifecycle and separation.
+ * 7. Safe DEBUG_MODE testing switch.
  */
 object TriggerManager {
 
@@ -97,13 +94,8 @@ object TriggerManager {
 
     private const val NOTIFICATION_CHANNEL_ID = "kaiko_emergency_alerts"
     private const val NOTIFICATION_ID = 1001
-    private const val LOCATION_TIMEOUT_MS = 4000L // 4.0s for fresh fix attempt
-    private const val LOCATION_SAFETY_TIMEOUT_MS = 5000L // 5.0s hard safety limit for entire location flow
-
-    // Active Location Session Tracking
-    private var activeLocationJob: Job? = null
-    private var activeLocationTokenSource: CancellationTokenSource? = null
-
+    private const val LOCATION_TIMEOUT_MS = 4000L // 4.0s for individual location fetches
+    private const val LOCATION_SAFETY_TIMEOUT_MS = 5000L // 5.0s maximum waiting time for permission/setup/acquisition flow
 
     // PendingIntent Request Codes
     private const val REQ_ESCALATION_ALARM = 2001
@@ -138,13 +130,6 @@ object TriggerManager {
      * 4. Discreet Widget
      */
     fun fireAlert(context: Context, source: String = "unknown") {
-        // Section 14: Duplicate SOS Protection
-        val currentState = getCurrentState(context)
-        if (currentState.isActive()) {
-            Log.w(TAG, "Duplicate SOS trigger blocked! An active SOS session ($currentState) is already in progress.")
-            return
-        }
-
         val triggerMode = normalizeTriggerSource(source)
         val triggerTimestamp = System.currentTimeMillis()
         val formattedTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(triggerTimestamp))
@@ -154,9 +139,8 @@ object TriggerManager {
         Log.d(TAG, "[$formattedTime] EMERGENCY SOS TRIGGERED (Event ID: $eventId, Mode: '$triggerMode')")
         Log.d(TAG, "DEBUG_MODE: $DEBUG_MODE")
 
-        // 1. Cancel any existing escalation timer, stop previous location session & clean up previous event data
+        // 1. Cancel any existing escalation timer & clean up previous event data
         cancelEscalationTimer(context)
-        stopActiveLocationSession()
         clearAlertedGuardians(context)
 
         // 2. Persist fresh event state
@@ -173,8 +157,21 @@ object TriggerManager {
         broadcastStateChange(context)
 
         // 3. Central location resolution & Guardian 1 dispatch
-        activeLocationJob = CoroutineScope(Dispatchers.IO).launch {
-            val location = resolveInitialSosLocation(context, triggerMode, LOCATION_SAFETY_TIMEOUT_MS)
+        CoroutineScope(Dispatchers.IO).launch {
+            val location: Location? = if (triggerMode == TRIGGER_DISCREET_SAFETY) {
+                // Section 8: Discreet Safety Trigger — Completely Untouched
+                // Strictly silent: no popups, no UI, no extra delay.
+                if (hasLocationPermission(context) && isLocationServiceEnabled(context)) {
+                    Log.d(TAG, "Discreet Safety Trigger: Permission & Services available. Silently attempting location fetch...")
+                    fetchFreshLocationWithFallback(context, LOCATION_TIMEOUT_MS)
+                } else {
+                    Log.d(TAG, "Discreet Safety Trigger: Permission or services not available. Silently proceeding without location.")
+                    null
+                }
+            } else {
+                // Section 1-6: Normal SOS Triggers (3x Press, Normal Widget, App SOS Button)
+                resolveNormalSosLocation(context)
+            }
 
             val locationStatus: LocationStatus
             val coords: String?
@@ -210,7 +207,7 @@ object TriggerManager {
      * For Guardian 2 & 3, ALWAYS attempts to fetch a fresh current location (max 3-5s).
      */
     fun dispatchToGuardian(context: Context, guardianIndex: Int, isRetry: Boolean = false) {
-        val job = CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             val currentState = getCurrentState(context)
             if (currentState == SosState.USER_MARKED_SAFE || (!currentState.isActive() && currentState != SosState.SOS_TRIGGERED)) {
                 Log.d(TAG, "Dispatch halted. Current state is inactive: $currentState")
@@ -233,7 +230,7 @@ object TriggerManager {
                     coords = null
                 }
             } else {
-                // Section 8 & 9: Guardian 2 & 3 Location Flow
+                // Section 7 & 8: Guardian 2 & 3 Location Flow
                 // ALWAYS attempt to fetch a NEW current location (Max 3-5s)
                 Log.d(TAG, "Guardian $guardianIndex Escalation: ALWAYS attempting fresh current location (timeout: ${LOCATION_TIMEOUT_MS}ms)...")
                 val freshLocation: Location? = if (hasLocationPermission(context) && isLocationServiceEnabled(context)) {
@@ -243,7 +240,7 @@ object TriggerManager {
                 }
 
                 if (freshLocation != null) {
-                    // Priority 1: New location available -> Send NEW CURRENT location
+                    // Case A: New location available -> Send NEW CURRENT location
                     coords = "${freshLocation.latitude},${freshLocation.longitude}"
                     prefs.edit()
                         .putString(KEY_LAST_COORDS, coords)
@@ -252,7 +249,7 @@ object TriggerManager {
                     locationStatus = LocationStatus.CURRENT
                     Log.i(TAG, "Guardian $guardianIndex: NEW Current location obtained: $coords")
                 } else {
-                    // Priority 2: New location unavailable, but previous location exists -> Send LAST KNOWN location
+                    // Case B: New location unavailable, but previous location exists -> Send LAST KNOWN location
                     val hasPrev = prefs.getBoolean(KEY_HAS_PREVIOUS_LOCATION, false)
                     val prevCoords = prefs.getString(KEY_LAST_COORDS, null)
 
@@ -261,7 +258,7 @@ object TriggerManager {
                         locationStatus = LocationStatus.LAST_KNOWN
                         Log.i(TAG, "Guardian $guardianIndex: Fresh location unavailable. Using LAST KNOWN location: $coords")
                     } else {
-                        // Priority 3: No location has ever been obtained -> Send without location
+                        // Case C: No location has ever been obtained -> Send without location
                         coords = null
                         locationStatus = LocationStatus.UNAVAILABLE
                         Log.i(TAG, "Guardian $guardianIndex: No location has ever been obtained. Sending without location.")
@@ -271,7 +268,6 @@ object TriggerManager {
 
             dispatchToGuardianInternal(context, guardianIndex, locationStatus, coords, isRetry)
         }
-        activeLocationJob = job
     }
 
     /**
@@ -376,19 +372,24 @@ object TriggerManager {
     }
 
     /**
-     * Resolution message for Section 12: "I'M SAFE NOW".
+     * Resolution message for Section 14: "I'M SAFE NOW".
      */
     fun buildSafeResolutionMessage(): String {
-        return "🟢 KAIKO UPDATE: The user is safe. Escalation stopped."
+        return "🟢 KAIKO SOS UPDATE\n\n" +
+                "The user has marked themselves as safe.\n\n" +
+                "Emergency escalation has been stopped.\n\n" +
+                "No further guardian escalation is currently scheduled."
     }
 
     /**
-     * Test Update message for Section 13: Simulated Guardian ACK.
+     * Test Update message for Section 15: Simulated Guardian ACK.
      */
     fun buildTestAckResolutionMessage(): String {
-        return "🧪 KAIKO TEST UPDATE: Emergency test acknowledged. Escalation stopped."
+        return "🧪 KAIKO TEST UPDATE\n\n" +
+                "This SOS event was part of a test.\n\n" +
+                "The emergency test has been acknowledged and the escalation has been stopped.\n\n" +
+                "No action is required."
     }
-
 
     /**
      * Tracks that a guardian has been alerted in the current SOS event.
@@ -607,7 +608,6 @@ object TriggerManager {
     fun markUserSafe(context: Context) {
         Log.i(TAG, "Action triggered: 'I\'m Safe Now'. Halting pending escalation...")
         cancelEscalationTimer(context)
-        stopActiveLocationSession()
         updateState(context, SosState.USER_MARKED_SAFE)
 
         // Dismiss ongoing emergency notification
@@ -623,18 +623,17 @@ object TriggerManager {
             sendResolutionSms(context, phone, safeMessage)
         }
 
-        // Clean up event state so next SOS starts fresh
+        // Section 16: Clean up event state so next SOS starts fresh
         clearAlertedGuardians(context)
     }
 
     /**
-     * Section 13: Simulated Guardian Acknowledgement [TEST ONLY]:
+     * Section 15: Simulated Guardian Acknowledgement [TEST ONLY]:
      * 1. Stop pending escalation
-     * 2. Stop active test location session
-     * 3. Resolve current test event
-     * 4. Find guardians already alerted during THIS event
-     * 5. Send TEST update ONLY to those guardians
-     * 6. Clean up event state
+     * 2. Resolve current test event
+     * 3. Find guardians already alerted during THIS event
+     * 4. Send TEST update ONLY to those guardians
+     * 5. Clean up event state
      */
     fun simulateGuardianAck(context: Context, guardianIndex: Int? = null) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -649,7 +648,6 @@ object TriggerManager {
 
         Log.i(TAG, "[TEST ONLY] Simulated acknowledgement received for Guardian $activeIndex. Stopping escalation.")
         cancelEscalationTimer(context)
-        stopActiveLocationSession()
         updateState(context, ackState)
 
         // Dismiss ongoing emergency notification
@@ -665,10 +663,9 @@ object TriggerManager {
             sendResolutionSms(context, phone, testMessage)
         }
 
-        // Clean up event state
+        // Section 16: Clean up event state
         clearAlertedGuardians(context)
     }
-
 
     /**
      * Schedules the next escalation alarm via AlarmManager.
@@ -843,84 +840,70 @@ object TriggerManager {
     }
 
     /**
-     * Checks if system location services (GPS or Network provider) are enabled.
-     * Terminology: ANDROID LOCATION SERVICES / GPS TOGGLE
+     * Checks whether Android Location Services / GPS Toggle is ON.
      */
     fun isLocationServiceEnabled(context: Context): Boolean {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            lm.isLocationEnabled
-        } else {
-            lm.isProviderEnabled(LocationManager.GPS_PROVIDER) || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        }
+        return LocationManagerCompat.isLocationEnabled(lm)
     }
 
     /**
-     * Checks if cellular or Wi-Fi network connectivity is currently available.
+     * Requests Android location permission by launching MainActivity or broadcasting.
      */
-    fun isNetworkConnected(context: Context): Boolean {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-        val activeNet = cm.activeNetwork ?: return false
-        val caps = cm.getNetworkCapabilities(activeNet) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
-
-    /**
-     * Attempts to obtain a Google Maps real-time Location Sharing link.
-     * Per Section 5 of specification:
-     * Evaluates programmatic availability; as Google Maps has no public headless/silent API
-     * on Android without user GUI interaction, this safely returns null to trigger immediate coordinate fallback.
-     */
-    @Suppress("UNUSED_PARAMETER")
-    private suspend fun attemptGoogleMapsLiveLocationLink(context: Context): String? {
-        Log.d(TAG, "Attempting Google Maps real-time Location Sharing link...")
-        Log.i(TAG, "Live location headless API unsupported on Android platform without user GUI intervention. Cleanly falling back to coordinate location.")
-        return null
-    }
-
-    /**
-     * Immediately stops any active live-location fetching session or coroutine job.
-     */
-    fun stopActiveLocationSession() {
+    fun requestLocationPermission(context: Context) {
         try {
-            activeLocationTokenSource?.cancel()
-            activeLocationJob?.cancel()
-            activeLocationJob = null
-            activeLocationTokenSource = null
-            Log.d(TAG, "Active location session stopped.")
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = ACTION_REQUEST_LOCATION_PERMISSION
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            context.startActivity(intent)
         } catch (e: Exception) {
-            Log.w(TAG, "Error stopping active location session: ${e.message}")
+            Log.e(TAG, "Failed to start MainActivity for permission request: ${e.message}")
+        }
+        try {
+            val broadcast = Intent(ACTION_REQUEST_LOCATION_PERMISSION).setPackage(context.packageName)
+            context.sendBroadcast(broadcast)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to broadcast permission request: ${e.message}")
         }
     }
 
-    private fun broadcastLocationPermissionRequired(context: Context) {
-        val intent = Intent(ACTION_REQUEST_LOCATION_PERMISSION).setPackage(context.packageName)
-        context.sendBroadcast(intent)
-    }
-
-    private fun broadcastLocationSettingsRequired(context: Context) {
-        val intent = Intent(ACTION_REQUEST_LOCATION_SETTINGS).setPackage(context.packageName)
-        context.sendBroadcast(intent)
+    /**
+     * Requests user to turn ON Android Location Services / GPS Toggle via MainActivity or broadcasting.
+     */
+    fun requestLocationSettings(context: Context) {
+        try {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = ACTION_REQUEST_LOCATION_SETTINGS
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start MainActivity for location settings: ${e.message}")
+        }
+        try {
+            val broadcast = Intent(ACTION_REQUEST_LOCATION_SETTINGS).setPackage(context.packageName)
+            context.sendBroadcast(broadcast)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to broadcast location settings request: ${e.message}")
+        }
     }
 
     /**
-     * Executes the strict SOS Location Decision Hierarchy (v1.3.0):
+     * Executes the strict Location Flow for Normal SOS Triggers (v1.3.1):
+     * 1. 3x Press Trigger
+     * 2. Normal Widget Trigger
+     * 3. App SOS Button
      *
-     * KAIKO LOCATION PERMISSION?
-     * ├── ON
-     * │   ANDROID LOCATION SERVICES / GPS TOGGLE?
-     * │   ├── YES
-     * │   │   NETWORK ON?
-     * │   │   ├── YES -> TRY GOOGLE MAPS LIVE LOCATION LINK (Headless API unavailable -> Fallback to Current Coords)
-     * │   │   └── NO  -> GET CURRENT LOCATION -> SEND SOS + COORDINATE GOOGLE MAPS URL
-     * │   └── NO  -> REQUEST ANDROID LOCATION SERVICES / GPS TOGGLE (Wait max 5s)
-     * └── OFF -> REQUEST KAIKO LOCATION PERMISSION (Wait max 5s)
-     *
-     * Strict 5-Second Safety Limit: SOS is never blocked indefinitely.
+     * Flow:
+     * Trigger
+     * -> Location Permission check (If OFF: request permission, wait max 5s)
+     * -> Android Location Services / GPS Toggle check (If OFF: request user turn ON, wait max 5s)
+     * -> Try to obtain current GPS coordinates (regardless of network status)
+     * -> Return location or null (within the strict 5-second total safety limit).
      */
-    suspend fun resolveInitialSosLocation(
+    suspend fun resolveNormalSosLocation(
         context: Context,
-        triggerMode: String,
         safetyTimeoutMs: Long = LOCATION_SAFETY_TIMEOUT_MS
     ): Location? {
         val startTime = System.currentTimeMillis()
@@ -930,93 +913,71 @@ object TriggerManager {
             return (safetyTimeoutMs - elapsed).coerceAtLeast(0L)
         }
 
-        Log.d(TAG, "Starting SOS location decision flow (Max safety timeout: ${safetyTimeoutMs}ms)...")
+        Log.d(TAG, "Starting Normal SOS location flow (5s safety limit: ${safetyTimeoutMs}ms)...")
 
         // 1. KAIKO LOCATION PERMISSION?
         var permissionGranted = hasLocationPermission(context)
         if (!permissionGranted) {
-            Log.w(TAG, "KAIKO LOCATION PERMISSION: OFF")
-            if (triggerMode == TRIGGER_DISCREET_SAFETY) {
-                // Discreet Widget: Strict Silent Behaviour -> proceed without location immediately
-                Log.d(TAG, "Discreet Safety Trigger: Permission OFF -> proceeding without location immediately.")
-                return null
-            }
-
-            // Prompt permission request via broadcast
-            broadcastLocationPermissionRequired(context)
+            Log.w(TAG, "KAIKO LOCATION PERMISSION: OFF. Requesting Android location permission...")
+            requestLocationPermission(context)
 
             // Wait up to remaining time (max 5s safety limit)
             while (remainingTime() > 0L) {
-                delay(250)
+                delay(200)
                 if (hasLocationPermission(context)) {
                     permissionGranted = true
-                    Log.i(TAG, "User granted Kaiko Location Permission!")
+                    Log.i(TAG, "User GRANTED Kaiko Location Permission!")
                     break
                 }
             }
 
             if (!permissionGranted) {
-                Log.w(TAG, "User ignored or denied Kaiko location permission (5s safety limit reached). SEND SOS WITHOUT LOCATION.")
+                Log.w(TAG, "User denied or ignored location permission within 5s safety limit. Proceeding WITHOUT location.")
                 return null
             }
         } else {
-            Log.i(TAG, "KAIKO LOCATION PERMISSION: ON")
+            Log.i(TAG, "KAIKO LOCATION PERMISSION: ALREADY ON.")
         }
-
-        // CRITICAL SPEC RULE: Permission = ON must NEVER skip directly to NETWORK ON?
-        // Must ALWAYS check ANDROID LOCATION SERVICES / GPS TOGGLE first!
 
         // 2. ANDROID LOCATION SERVICES / GPS TOGGLE?
         var locationServicesEnabled = isLocationServiceEnabled(context)
         if (!locationServicesEnabled) {
-            Log.w(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: OFF")
-            if (triggerMode == TRIGGER_DISCREET_SAFETY) {
-                // Discreet Widget: Strict Silent Behaviour -> proceed without location immediately
-                Log.d(TAG, "Discreet Safety Trigger: GPS Toggle OFF -> proceeding without location immediately.")
-                return null
-            }
-
-            // Prompt Android Location Services / GPS Toggle via broadcast
-            broadcastLocationSettingsRequired(context)
+            Log.w(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: OFF. Requesting user to turn ON...")
+            requestLocationSettings(context)
 
             // Wait up to remaining time (max 5s safety limit)
             while (remainingTime() > 0L) {
-                delay(250)
+                delay(200)
                 if (isLocationServiceEnabled(context)) {
                     locationServicesEnabled = true
-                    Log.i(TAG, "User enabled Android Location Services / GPS Toggle!")
+                    Log.i(TAG, "User turned ON Android Location Services / GPS Toggle!")
                     break
                 }
             }
 
             if (!locationServicesEnabled) {
-                Log.w(TAG, "User ignored/declined ANDROID LOCATION SERVICES / GPS TOGGLE (5s safety limit reached). SEND SOS WITHOUT LOCATION.")
+                Log.w(TAG, "User denied, closed, or ignored GPS toggle request within 5s safety limit. Proceeding WITHOUT location.")
                 return null
             }
         } else {
-            Log.i(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: ON")
+            Log.i(TAG, "ANDROID LOCATION SERVICES / GPS TOGGLE: ALREADY ON.")
         }
 
-        // 3. NETWORK ON?
-        val networkOn = isNetworkConnected(context)
-        Log.i(TAG, "NETWORK: " + (if (networkOn) "ON" else "OFF"))
+        // 3. GPS LOCATION ACQUISITION
+        val fetchBudget = remainingTime()
+        if (fetchBudget <= 0L) {
+            Log.w(TAG, "5-second safety limit reached before location acquisition. Proceeding WITHOUT location.")
+            return null
+        }
 
-        val fetchBudget = remainingTime().coerceAtLeast(1500L)
-
-        if (networkOn) {
-            // Section 5: Attempt Google Maps real-time Location Sharing link
-            val liveLink = attemptGoogleMapsLiveLocationLink(context)
-            if (liveLink != null) {
-                Log.i(TAG, "Live location link acquired: $liveLink")
-            } else {
-                Log.i(TAG, "LIVE LOCATION ATTEMPT FAILS -> FALL BACK TO CURRENT COORDINATES -> SEND NORMAL GOOGLE MAPS COORDINATE URL")
-            }
-            return fetchFreshLocationWithFallback(context, fetchBudget)
+        Log.i(TAG, "Acquiring GPS coordinates with remaining budget: ${fetchBudget}ms...")
+        val location = fetchFreshLocationWithFallback(context, fetchBudget)
+        if (location != null) {
+            Log.i(TAG, "GPS coordinates obtained: ${location.latitude}, ${location.longitude}")
         } else {
-            // Section 7: Network OFF does NOT automatically mean GPS/location is unavailable!
-            Log.i(TAG, "Network is OFF: Attempting to obtain coordinates from device GPS provider...")
-            return fetchFreshLocationWithFallback(context, fetchBudget)
+            Log.w(TAG, "GPS coordinates unavailable within safety limit. Proceeding WITHOUT location.")
         }
+        return location
     }
 
     private fun hasNotificationPermission(context: Context): Boolean {
@@ -1037,7 +998,6 @@ object TriggerManager {
                     val fusedClient: FusedLocationProviderClient =
                         LocationServices.getFusedLocationProviderClient(context)
                     val cancellationTokenSource = CancellationTokenSource()
-                    activeLocationTokenSource = cancellationTokenSource
 
                     try {
                         fusedClient.getCurrentLocation(
@@ -1062,8 +1022,6 @@ object TriggerManager {
         } catch (e: Exception) {
             Log.w(TAG, "fetchFreshLocationOnly failed: ${e.message}")
             null
-        } finally {
-            activeLocationTokenSource = null
         }
     }
 
@@ -1113,7 +1071,6 @@ object TriggerManager {
 
         return null
     }
-
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

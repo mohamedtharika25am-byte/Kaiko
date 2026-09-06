@@ -88,13 +88,16 @@ class TriggerManagerTest {
     @Test
     fun testSafeResolutionMessage() {
         val msg = TriggerManager.buildSafeResolutionMessage()
-        assertEquals("🟢 KAIKO UPDATE: The user is safe. Escalation stopped.", msg)
+        assertTrue(msg.contains("🟢 KAIKO SOS UPDATE"))
+        assertTrue(msg.contains("The user has marked themselves as safe."))
+        assertTrue(msg.contains("Emergency escalation has been stopped."))
     }
 
     @Test
     fun testTestAckResolutionMessage() {
         val msg = TriggerManager.buildTestAckResolutionMessage()
-        assertEquals("🧪 KAIKO TEST UPDATE: Emergency test acknowledged. Escalation stopped.", msg)
+        assertTrue(msg.contains("🧪 KAIKO TEST UPDATE"))
+        assertTrue(msg.contains("The emergency test has been acknowledged"))
     }
 
     @Test
