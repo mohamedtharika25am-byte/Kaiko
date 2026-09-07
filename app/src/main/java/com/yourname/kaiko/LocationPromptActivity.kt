@@ -1,5 +1,6 @@
 package com.yourname.kaiko
 
+import android.Manifest
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationRequest
@@ -16,9 +18,9 @@ import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 
 /**
- * Lightweight transparent activity to request Android Location Services / GPS Toggle
+ * Lightweight transparent activity to request Android Location Permission and/or GPS Toggle
  * directly from the current screen (e.g. Home screen widget, 3x hardware press)
- * using the default native Google/Android location request dialog without opening MainActivity.
+ * using default native Google/Android dialogs without ever opening MainActivity or showing app UI.
  */
 class LocationPromptActivity : AppCompatActivity() {
 
@@ -31,6 +33,20 @@ class LocationPromptActivity : AppCompatActivity() {
     private val autoDismissRunnable = Runnable {
         if (!isFinishing && !isDestroyed) {
             Log.d(TAG, "LocationPromptActivity: Auto-dismissing after timeout.")
+            finish()
+        }
+    }
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            Log.d(TAG, "LocationPromptActivity: Location permission granted. Checking GPS toggle...")
+            promptLocationSettings()
+        } else {
+            Log.w(TAG, "LocationPromptActivity: Location permission denied.")
             finish()
         }
     }
@@ -49,7 +65,22 @@ class LocationPromptActivity : AppCompatActivity() {
         }
         // Auto-dismiss activity after 5.5 seconds as a safety limit
         handler.postDelayed(autoDismissRunnable, 5500L)
-        promptLocationSettings()
+
+        checkAndPrompt()
+    }
+
+    private fun checkAndPrompt() {
+        if (!TriggerManager.hasLocationPermission(this)) {
+            Log.d(TAG, "LocationPromptActivity: Requesting location permission directly over current screen...")
+            permissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else {
+            promptLocationSettings()
+        }
     }
 
     private fun promptLocationSettings() {

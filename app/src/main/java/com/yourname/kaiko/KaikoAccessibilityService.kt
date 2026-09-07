@@ -2,6 +2,7 @@ package com.yourname.kaiko
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Intent
 import android.util.Log
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
@@ -34,6 +35,23 @@ class KaikoAccessibilityService : AccessibilityService() {
         val info = serviceInfo ?: AccessibilityServiceInfo()
         info.flags = info.flags or AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
         serviceInfo = info
+
+        // Broadcast state change so MainActivity updates status live
+        try {
+            sendBroadcast(Intent(TriggerManager.ACTION_STATE_CHANGED))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to broadcast accessibility connected: ${e.message}")
+        }
+
+        // Attempt automatic return to Kaiko if OEM/Android allows
+        try {
+            val returnIntent = Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            }
+            startActivity(returnIntent)
+        } catch (e: Exception) {
+            Log.d(TAG, "Automatic return to Kaiko not permitted by OS: ${e.message}")
+        }
     }
 
     /**

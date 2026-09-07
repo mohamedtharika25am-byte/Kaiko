@@ -15,6 +15,7 @@ import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.gms.common.api.ResolvableApiException
@@ -25,12 +26,18 @@ import com.google.android.gms.location.Priority
 import com.yourname.kaiko.databinding.ActivityMainBinding
 
 /**
- * Onboarding and Configuration Activity for Kaiko (v1.3.1).
- * Supports:
- * 1. Multi-Guardian Configuration (Guardian 1 mandatory, Guardians 2 & 3 optional, Final contact optional).
- * 2. Escalation Delay Configuration (30s, 60s, 120s for testing).
- * 3. Real-time Active Emergency banner with "I'm Safe Now" and "Simulate Ack [TEST]" actions.
- * 4. Runtime permission requests and Android Location Services / GPS Toggle handling.
+ * Main Activity for Kaiko (v1.4.0).
+ * Features:
+ * 1. Top large circular SOS trigger button.
+ * 2. Active SOS controls with 4 dedicated actions:
+ *    - 🟢 I'M SAFE
+ *    - 🚨 EMERGENCY
+ *    - ⚠️ MISTOUCHED (with confirmation)
+ *    - 🧪 TEST (stop escalation test only, no SMS)
+ * 3. Compact System Status (Location, Accessibility, Guardians).
+ * 4. First-time accessibility onboarding.
+ * 5. Direct Android Accessibility settings management.
+ * 6. Top-right Info icon launching dedicated Kaiko User Guide.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -41,7 +48,10 @@ class MainActivity : AppCompatActivity() {
     private val stateChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                TriggerManager.ACTION_STATE_CHANGED -> updateActiveSosBanner()
+                TriggerManager.ACTION_STATE_CHANGED -> {
+                    updateActiveSosBanner()
+                    updateSystemStatus()
+                }
                 TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION -> requestAppPermissions()
                 TriggerManager.ACTION_REQUEST_LOCATION_SETTINGS -> promptLocationServices()
             }
@@ -65,6 +75,7 @@ class MainActivity : AppCompatActivity() {
                 Toast.LENGTH_LONG
             ).show()
         }
+        updateSystemStatus()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +88,8 @@ class MainActivity : AppCompatActivity() {
         loadSavedConfiguration()
         setupListeners()
         updateActiveSosBanner()
+        updateSystemStatus()
+        checkAccessibilityOnboarding()
         handleIncomingAction(intent)
     }
 
@@ -95,7 +108,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        updateAccessibilityStatus()
+        updateSystemStatus()
         updateActiveSosBanner()
 
         // Register state change receiver and location setup actions
@@ -150,7 +163,83 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Save & Enable Button
+        // 1. Top Large Circular SOS Button
+        binding.btnMainSos.setOnClickListener {
+            TriggerManager.fireAlert(this, TriggerManager.TRIGGER_MANUAL_APP)
+            updateActiveSosBanner()
+        }
+
+        // 2. Info Icon -> User Guide Screen
+        binding.btnUserGuide.setOnClickListener {
+            startActivity(Intent(this, UserGuideActivity::class.java))
+        }
+
+        // 3. System Status: Location item
+        binding.itemLocationStatus.setOnClickListener {
+            if (!TriggerManager.hasLocationPermission(this)) {
+                requestAppPermissions()
+            } else if (!TriggerManager.isLocationServiceEnabled(this)) {
+                promptLocationServices()
+            } else {
+                Toast.makeText(this, "Location permission & GPS Toggle are ON", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 4. System Status: Accessibility item
+        binding.itemAccessibilityStatus.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        // 5. System Status: Guardians item -> Open existing Manage Guardians card
+        binding.itemGuardiansStatus.setOnClickListener {
+            binding.scrollView.smoothScrollTo(0, binding.cardConfig.top)
+            binding.etGuardian1.requestFocus()
+        }
+
+        // 6. Accessibility Management Button
+        binding.btnOpenAccessibility.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+
+        // 7. Active SOS Button 1: 🟢 I'M SAFE
+        binding.btnSafeNow.setOnClickListener {
+            TriggerManager.markUserSafe(this)
+            updateActiveSosBanner()
+            Toast.makeText(this, "Marked safe. Escalation stopped.", Toast.LENGTH_SHORT).show()
+        }
+
+        // 8. Active SOS Button 2: 🚨 EMERGENCY (Immediate Escalation)
+        binding.btnEscalateEmergency.setOnClickListener {
+            TriggerManager.escalateImmediately(this)
+            updateActiveSosBanner()
+            Toast.makeText(this, "Escalating to next guardian immediately.", Toast.LENGTH_SHORT).show()
+        }
+
+        // 9. Active SOS Button 3: ⚠️ MISTOUCHED (Confirmation Dialog)
+        binding.btnMistouched.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Mistouched?")
+                .setMessage("This will stop the current SOS escalation.")
+                .setPositiveButton("YES, STOP") { _, _ ->
+                    TriggerManager.markUserSafe(this)
+                    updateActiveSosBanner()
+                    Toast.makeText(this, "SOS escalation stopped.", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("KEEP SOS ACTIVE") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .setCancelable(false)
+                .show()
+        }
+
+        // 10. Active SOS Button 4: 🧪 TEST (Stop Escalation Test Only, No SMS)
+        binding.btnTestOnly.setOnClickListener {
+            TriggerManager.stopEscalationTestOnly(this)
+            updateActiveSosBanner()
+            Toast.makeText(this, "Test stopped. No SMS sent.", Toast.LENGTH_SHORT).show()
+        }
+
+        // 11. Save Contacts Button
         binding.btnSaveAndEnable.setOnClickListener {
             val g1 = binding.etGuardian1.text.toString().trim()
             val g2 = binding.etGuardian2.text.toString().trim()
@@ -208,33 +297,80 @@ class MainActivity : AppCompatActivity() {
                 .apply()
 
             Toast.makeText(this, "Configuration saved successfully!", Toast.LENGTH_SHORT).show()
+            updateSystemStatus()
             requestAppPermissions()
         }
+    }
 
-        // Accessibility Settings Button
-        binding.btnOpenAccessibility.setOnClickListener {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivity(intent)
+    /**
+     * Section 4: First-time Accessibility Onboarding.
+     * Non-forcing dialog explaining requirement with [ENABLE ACCESSIBILITY] and [NOT NOW].
+     */
+    private fun checkAccessibilityOnboarding() {
+        val hasShown = sharedPreferences.getBoolean("KEY_ACCESSIBILITY_ONBOARDING_SHOWN", false)
+        val isEnabled = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
+        if (!hasShown && !isEnabled) {
+            sharedPreferences.edit().putBoolean("KEY_ACCESSIBILITY_ONBOARDING_SHOWN", true).apply()
+            AlertDialog.Builder(this)
+                .setTitle("Accessibility Setup")
+                .setMessage("Accessibility is required for the 3× Press emergency trigger.")
+                .setPositiveButton("ENABLE ACCESSIBILITY") { _, _ ->
+                    startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                }
+                .setNegativeButton("NOT NOW") { dialog, _ ->
+                    dialog.dismiss()
+                    updateSystemStatus()
+                }
+                .setCancelable(true)
+                .show()
+        }
+    }
+
+    /**
+     * Updates the 3 System Status indicators:
+     * 1. Location: ON / OFF
+     * 2. Accessibility: ON / OFF
+     * 3. Guardians: X guardians configured
+     */
+    private fun updateSystemStatus() {
+        // 1. Location Status
+        val locPerm = TriggerManager.hasLocationPermission(this)
+        val gpsEnabled = TriggerManager.isLocationServiceEnabled(this)
+        val locationOn = locPerm && gpsEnabled
+        if (locationOn) {
+            binding.tvLocationStatusValue.text = "ON"
+            binding.tvLocationStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvLocationStatusValue.text = "OFF"
+            binding.tvLocationStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
         }
 
-        // "I'm Safe Now" Button
-        binding.btnSafeNow.setOnClickListener {
-            TriggerManager.markUserSafe(this)
-            updateActiveSosBanner()
-            Toast.makeText(this, "Marked safe. Escalation stopped.", Toast.LENGTH_SHORT).show()
+        // 2. Accessibility Status
+        val accOn = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
+        if (accOn) {
+            binding.tvAccessibilityStatusValue.text = "ON"
+            binding.tvAccessibilityStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvAccessibilityStatusValue.text = "OFF"
+            binding.tvAccessibilityStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
         }
 
-        // "Simulate Guardian Ack [TEST ONLY]" Button
-        binding.btnSimulateAck.setOnClickListener {
-            TriggerManager.simulateGuardianAck(this)
-            updateActiveSosBanner()
-            Toast.makeText(this, "Simulated Guardian Acknowledgement recorded.", Toast.LENGTH_SHORT).show()
-        }
+        // 3. Guardians Count Status
+        val guardianCount = TriggerManager.getConfiguredGuardiansCount(this)
+        val countText = "$guardianCount ${if (guardianCount == 1) "guardian" else "guardians"} configured"
+        binding.tvGuardiansStatusValue.text = countText
+    }
 
-        // Manual Test SOS Trigger (App SOS Button)
-        binding.btnManualTestTrigger.setOnClickListener {
-            TriggerManager.fireAlert(this, TriggerManager.TRIGGER_MANUAL_APP)
-            updateActiveSosBanner()
+    /**
+     * Shows 4 Active SOS buttons ONLY when an actual SOS trigger action is active.
+     */
+    private fun updateActiveSosBanner() {
+        val currentState = TriggerManager.getCurrentState(this)
+        if (currentState.isActive()) {
+            binding.cardActiveSos.visibility = View.VISIBLE
+            binding.tvActiveSosStatus.text = "Status: ${currentState.displayName}"
+        } else {
+            binding.cardActiveSos.visibility = View.GONE
         }
     }
 
@@ -274,16 +410,7 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1002 && resultCode == RESULT_OK) {
             Toast.makeText(this, "Location services enabled", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun updateActiveSosBanner() {
-        val currentState = TriggerManager.getCurrentState(this)
-        if (currentState.isActive()) {
-            binding.cardActiveSos.visibility = View.VISIBLE
-            binding.tvActiveSosStatus.text = "Status: ${currentState.displayName}"
-        } else {
-            binding.cardActiveSos.visibility = View.GONE
+            updateSystemStatus()
         }
     }
 
@@ -305,17 +432,6 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         requestPermissionsLauncher.launch(permissions.toTypedArray())
-    }
-
-    private fun updateAccessibilityStatus() {
-        val isEnabled = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
-        if (isEnabled) {
-            binding.tvAccessibilityStatus.text = getString(R.string.status_accessibility_enabled)
-            binding.tvAccessibilityStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
-        } else {
-            binding.tvAccessibilityStatus.text = getString(R.string.status_accessibility_disabled)
-            binding.tvAccessibilityStatus.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
-        }
     }
 
     private fun isAccessibilityServiceEnabled(

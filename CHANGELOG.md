@@ -2,7 +2,29 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
-## [v1.3.4] - 2026-09-06
+## [v1.4.0] — 2026-09-06 23:33 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `testReleaseUnitTest`)  
+> **Release Artifact:** `release/v1.4.0/Kaiko-v1.4.0.apk` (5.2 MB)  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 9  
+
+### Home UI + Accessibility + Active SOS Controls + User Guide
+- **Top Main SOS Button**: Centered large circular SOS button ("SOS", "TAP TO TRIGGER") clearly visible at the top of the home screen.
+- **System Status Card**: Compact status indicators for Location (ON/OFF, tap to manage), Accessibility (ON/OFF, tap to manage), and Guardians ("X guardians configured", tap to open manage guardians).
+- **Active SOS Controls (4 Buttons)**: Appears only after an actual SOS trigger starts:
+  1. 🟢 I'M SAFE — Stops escalation and dispatches safe update only to alerted guardians.
+  2. 🚨 EMERGENCY — Immediately advances to next guardian without waiting for escalation timeout.
+  3. ⚠️ MISTOUCHED — Prompts confirmation dialog before stopping escalation.
+  4. 🧪 TEST — Stops current escalation for testing without sending any SMS or notifications.
+- **First-Time Accessibility Onboarding**: Non-forcing dialog explaining requirement with [ENABLE ACCESSIBILITY] and [NOT NOW] options.
+- **Accessibility Management**: Direct navigation to Android Accessibility Settings with clear step-by-step instructions and live re-checking.
+- **Dedicated User Guide**: Top-right ℹ️ icon opens a clean, bulleted Kaiko User Guide explaining app purpose, all trigger methods, 3x press setup, location, guardians, and active SOS controls.
+- **Release Artifact**: Preserved all prior releases and generated `release/v1.4.0/Kaiko-v1.4.0.apk`.
+
+## [v1.3.4] — 2026-09-06 20:34 IST
+> **Build Status:** ✅ PASSED  
+> **Release Artifact:** `release/v1.3.4/Kaiko-v1.3.4.apk` (5.2 MB)  
+> **Target SDK:** 34 | **Min SDK:** 26 | **Version Code:** 8  
+
 ### Location Toggle Fix
 - 3x Press & Normal Widget: Uses DEFAULT native Android/Google location request dialog (`ResolvableApiException.startResolutionForResult`) directly over whatever screen the user is currently on via transparent `LocationPromptActivity`.
 - Never opens `MainActivity` or shows Kaiko main app UI on 3x press or normal widget trigger.
@@ -10,7 +32,7 @@ All notable changes to the Kaiko application are documented in this file.
 - GPS ON: Skips request, acquires current location, and sends SOS SMS with Maps coordinate link (`https://maps.google.com/?q=LATITUDE,LONGITUDE`).
 - User turns GPS ON: Re-checks GPS is ON, acquires current location, and sends SOS SMS with Maps coordinate link.
 - User DENY / CLOSE / IGNORE: Waits FULL 5 seconds before sending SOS SMS without location.
-- Preserved all previous releases (v1.2.1, v1.2.2, v1.3.0, v1.3.1, v1.3.2, v1.3.3) and generated `release/v1.3.4/Kaiko-v1.3.4.apk`
+- Preserved all previous releases (v1.2.1, v1.2.2, v1.3.0, v1.3.1, v1.3.2, v1.3.3) and generated `release/v1.3.4/Kaiko-v1.3.4.apk`.
 
 ## [v1.3.3] - 2026-09-06
 ### Location Flow on Current Screen

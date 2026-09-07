@@ -668,6 +668,37 @@ object TriggerManager {
     }
 
     /**
+     * Action: EMERGENCY - immediately escalates to the next guardian without waiting for normal timeout.
+     */
+    fun escalateImmediately(context: Context) {
+        val currentState = getCurrentState(context)
+        if (!currentState.isActive()) {
+            Log.d(TAG, "Cannot escalate immediately: SOS state is not active ($currentState).")
+            return
+        }
+        Log.i(TAG, "Action: EMERGENCY - immediately escalating to next guardian.")
+        cancelEscalationTimer(context)
+        handleEscalationTimeout(context)
+    }
+
+    /**
+     * Action: TEST - stops current escalation for testing only.
+     * DO NOT send a new SOS SMS.
+     * DO NOT send any test SMS.
+     * DO NOT notify guardians.
+     * DO NOT trigger a new SOS.
+     * DO NOT restart escalation.
+     */
+    fun stopEscalationTestOnly(context: Context) {
+        Log.i(TAG, "Action: TEST - stopping escalation without sending any SMS or notifications.")
+        cancelEscalationTimer(context)
+        updateState(context, SosState.IDLE)
+        val notificationManager = NotificationManagerCompat.from(context)
+        notificationManager.cancel(NOTIFICATION_ID)
+        clearAlertedGuardians(context)
+    }
+
+    /**
      * Schedules the next escalation alarm via AlarmManager.
      */
     private fun scheduleEscalationTimer(context: Context, currentGuardianIndex: Int) {
@@ -810,6 +841,19 @@ object TriggerManager {
         }
     }
 
+    /**
+     * Counts the total number of configured guardians.
+     * Does NOT calculate Active/Inactive guardian counts.
+     */
+    fun getConfiguredGuardiansCount(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var count = 0
+        if (!prefs.getString(KEY_GUARDIAN_PHONE, null).isNullOrBlank()) count++
+        if (!prefs.getString(KEY_GUARDIAN_2_PHONE, null).isNullOrBlank()) count++
+        if (!prefs.getString(KEY_GUARDIAN_3_PHONE, null).isNullOrBlank()) count++
+        return count
+    }
+
     fun getFinalHelpline(context: Context): String? {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getString(KEY_FINAL_HELPLINE_PHONE, null)
@@ -850,8 +894,8 @@ object TriggerManager {
     }
 
     /**
-     * Requests Android location permission by launching MainActivity or broadcasting.
-     * Skips request if permission is already ON.
+     * Requests Android location permission directly over current screen via transparent LocationPromptActivity.
+     * Skips request if permission is already ON. Does NOT open MainActivity.
      */
     fun requestLocationPermission(context: Context) {
         if (hasLocationPermission(context)) {
@@ -859,19 +903,12 @@ object TriggerManager {
             return
         }
         try {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                action = ACTION_REQUEST_LOCATION_PERMISSION
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val intent = Intent(context, LocationPromptActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start MainActivity for permission request: ${e.message}")
-        }
-        try {
-            val broadcast = Intent(ACTION_REQUEST_LOCATION_PERMISSION).setPackage(context.packageName)
-            context.sendBroadcast(broadcast)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to broadcast permission request: ${e.message}")
+            Log.e(TAG, "Failed to start LocationPromptActivity for permission request: ${e.message}")
         }
     }
 
@@ -887,7 +924,7 @@ object TriggerManager {
         }
         try {
             val intent = Intent(context, LocationPromptActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
             }
             context.startActivity(intent)
         } catch (e: Exception) {

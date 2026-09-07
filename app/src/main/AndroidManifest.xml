@@ -58,15 +58,22 @@
             </intent-filter>
         </activity>
 
+        <!-- Dedicated User Guide screen -->
+        <activity
+            android:name=".UserGuideActivity"
+            android:exported="false" />
+
         <!-- Transparent activity to prompt for Location Services / GPS directly on current screen -->
         <activity
             android:name=".LocationPromptActivity"
             android:theme="@style/Theme.Transparent"
             android:excludeFromRecents="true"
             android:exported="false"
+            android:taskAffinity=""
+            android:noHistory="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:launchMode="singleTask" />
+            android:launchMode="singleInstance" />
 
         <!-- 
             ====================================================================
