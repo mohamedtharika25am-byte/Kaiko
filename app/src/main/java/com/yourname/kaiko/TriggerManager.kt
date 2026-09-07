@@ -104,6 +104,7 @@ object TriggerManager {
     private const val REQ_ACTION_EMERGENCY = 4002
     private const val REQ_ACTION_MISTOUCHED = 4003
     private const val REQ_ACTION_TEST = 4004
+    private const val REQ_NOTIFICATION_CONTENT = 4005
 
     enum class LocationStatus {
         CURRENT,
@@ -835,6 +836,17 @@ object TriggerManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Tap Intent: Tapping notification body opens Kaiko MainActivity directly
+        val openAppIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val contentPendingIntent = PendingIntent.getActivity(
+            context,
+            REQ_NOTIFICATION_CONTENT,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val title = "⚠️ KAIKO SOS ACTIVE: ${state.displayName}"
         val content = "Alerting: $guardianPhone | $coordsText"
         val bigText = StringBuilder()
@@ -845,20 +857,35 @@ object TriggerManager {
             .append(if (DEBUG_MODE) "[DEBUG MODE: SMS Simulated]" else "[REAL SMS MODE]")
             .toString()
 
-        val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+        val notificationBuilder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setContentIntent(contentPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(state.isActive())
+            // Button 1: Always 🟢 I'M SAFE
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "🟢 I'M SAFE", safePendingIntent)
-            .addAction(android.R.drawable.stat_sys_warning, "🚨 EMERGENCY", emergencyPendingIntent)
-            .addAction(android.R.drawable.ic_menu_help, "⚠️ MISTOUCHED", mistouchedPendingIntent)
-            .addAction(android.R.drawable.ic_menu_info_details, "🧪 TEST", testPendingIntent)
-            .build()
+
+        // Button 2 (Dynamic): If next guardian exists -> 🚨 EMERGENCY; else -> 🧪 TEST
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val currentIndex = prefs.getInt(KEY_ACTIVE_GUARDIAN_INDEX, 1)
+        val hasNextGuardian = (currentIndex < 3 && !getGuardianPhone(context, currentIndex + 1).isNullOrBlank()) ||
+                              (currentIndex >= 3 && !getFinalHelpline(context).isNullOrBlank())
+
+        if (hasNextGuardian) {
+            notificationBuilder.addAction(android.R.drawable.stat_sys_warning, "🚨 EMERGENCY", emergencyPendingIntent)
+        } else {
+            notificationBuilder.addAction(android.R.drawable.ic_menu_info_details, "🧪 TEST", testPendingIntent)
+        }
+
+        // Button 3: Always ⚠️ MISTOUCHED
+        notificationBuilder.addAction(android.R.drawable.ic_menu_help, "⚠️ MISTOUCHED", mistouchedPendingIntent)
+
+        val notification = notificationBuilder.build()
 
         try {
             val notificationManager = NotificationManagerCompat.from(context)
