@@ -43,7 +43,10 @@ class LocationPromptActivity : AppCompatActivity() {
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
-            Log.d(TAG, "LocationPromptActivity: Location permission granted. Checking GPS toggle...")
+            Log.d(TAG, "LocationPromptActivity: Location permission granted. Resetting timer and checking GPS toggle...")
+            // Reset dismiss timer to give full window for GPS toggle resolution dialog
+            handler.removeCallbacks(autoDismissRunnable)
+            handler.postDelayed(autoDismissRunnable, 5500L)
             promptLocationSettings()
         } else {
             Log.w(TAG, "LocationPromptActivity: Location permission denied.")
@@ -66,6 +69,12 @@ class LocationPromptActivity : AppCompatActivity() {
         // Auto-dismiss activity after 5.5 seconds as a safety limit
         handler.postDelayed(autoDismissRunnable, 5500L)
 
+        checkAndPrompt()
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
         checkAndPrompt()
     }
 

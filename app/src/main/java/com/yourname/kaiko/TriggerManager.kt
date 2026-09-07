@@ -101,7 +101,9 @@ object TriggerManager {
     private const val REQ_ESCALATION_ALARM = 2001
     private const val REQ_SMS_SENT_BASE = 3000
     private const val REQ_ACTION_SAFE = 4001
-    private const val REQ_ACTION_SIMULATE_ACK = 4002
+    private const val REQ_ACTION_EMERGENCY = 4002
+    private const val REQ_ACTION_MISTOUCHED = 4003
+    private const val REQ_ACTION_TEST = 4004
 
     enum class LocationStatus {
         CURRENT,
@@ -699,6 +701,36 @@ object TriggerManager {
     }
 
     /**
+     * Action: MISTOUCHED (v1.4.1):
+     * - Treat this as an accidental/mistaken SOS trigger from ANY trigger method.
+     * - Do NOT send the I'M SAFE message.
+     * - Use dedicated Mistouched message:
+     *   "⚠️ KAIKO UPDATE: SOS was triggered by mistake. No emergency. Escalation stopped."
+     * - Stop current SOS escalation.
+     * - Send Mistouched update only to relevant guardians who received the current SOS.
+     */
+    fun handleMistouched(context: Context) {
+        Log.i(TAG, "Action triggered: MISTOUCHED. Halting pending escalation...")
+        cancelEscalationTimer(context)
+        updateState(context, SosState.USER_MARKED_SAFE)
+
+        // Dismiss ongoing emergency notification
+        val notificationManager = NotificationManagerCompat.from(context)
+        notificationManager.cancel(NOTIFICATION_ID)
+
+        // Find guardians already alerted during THIS event
+        val alertedGuardians = getAlertedGuardians(context)
+        Log.i(TAG, "Sending MISTOUCHED resolution update to ${alertedGuardians.size} alerted guardian(s): $alertedGuardians")
+
+        val mistouchedMessage = "⚠️ KAIKO UPDATE: SOS was triggered by mistake. No emergency. Escalation stopped."
+        for (phone in alertedGuardians) {
+            sendResolutionSms(context, phone, mistouchedMessage)
+        }
+
+        clearAlertedGuardians(context)
+    }
+
+    /**
      * Schedules the next escalation alarm via AlarmManager.
      */
     private fun scheduleEscalationTimer(context: Context, currentGuardianIndex: Int) {
@@ -759,7 +791,7 @@ object TriggerManager {
     ) {
         createNotificationChannel(context)
 
-        // Action: "I'm Safe Now"
+        // Action 1: 🟢 I'M SAFE
         val safeIntent = Intent(context, ActionReceiver::class.java).apply {
             action = ActionReceiver.ACTION_MARK_SAFE
         }
@@ -770,14 +802,36 @@ object TriggerManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Action: "Simulate Ack [TEST ONLY]"
-        val ackIntent = Intent(context, ActionReceiver::class.java).apply {
-            action = ActionReceiver.ACTION_SIMULATE_ACK
+        // Action 2: 🚨 EMERGENCY
+        val emergencyIntent = Intent(context, ActionReceiver::class.java).apply {
+            action = ActionReceiver.ACTION_EMERGENCY
         }
-        val ackPendingIntent = PendingIntent.getBroadcast(
+        val emergencyPendingIntent = PendingIntent.getBroadcast(
             context,
-            REQ_ACTION_SIMULATE_ACK,
-            ackIntent,
+            REQ_ACTION_EMERGENCY,
+            emergencyIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action 3: ⚠️ MISTOUCHED
+        val mistouchedIntent = Intent(context, ActionReceiver::class.java).apply {
+            action = ActionReceiver.ACTION_MISTOUCHED
+        }
+        val mistouchedPendingIntent = PendingIntent.getBroadcast(
+            context,
+            REQ_ACTION_MISTOUCHED,
+            mistouchedIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Action 4: 🧪 TEST
+        val testIntent = Intent(context, ActionReceiver::class.java).apply {
+            action = ActionReceiver.ACTION_TEST
+        }
+        val testPendingIntent = PendingIntent.getBroadcast(
+            context,
+            REQ_ACTION_TEST,
+            testIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -800,8 +854,10 @@ object TriggerManager {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(state.isActive())
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "I'm Safe Now", safePendingIntent)
-            .addAction(android.R.drawable.ic_menu_info_details, "Simulate Ack [TEST]", ackPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "🟢 I'M SAFE", safePendingIntent)
+            .addAction(android.R.drawable.stat_sys_warning, "🚨 EMERGENCY", emergencyPendingIntent)
+            .addAction(android.R.drawable.ic_menu_help, "⚠️ MISTOUCHED", mistouchedPendingIntent)
+            .addAction(android.R.drawable.ic_menu_info_details, "🧪 TEST", testPendingIntent)
             .build()
 
         try {

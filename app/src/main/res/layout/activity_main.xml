@@ -220,9 +220,9 @@
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <!-- Item 1: 📍 Location -->
+            <!-- Item 1: 📍 Location Permission -->
             <LinearLayout
-                android:id="@+id/itemLocationStatus"
+                android:id="@+id/itemLocationPermission"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
@@ -248,7 +248,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Location"
+                        android:text="Location Permission"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -257,14 +257,69 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Tap to manage location"
+                        android:text="Tap to manage permission"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvLocationStatusValue"
+                    android:id="@+id/tvLocationPermissionValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:text="OFF"
+                    android:textColor="@color/status_disabled"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Item 2: 📡 Location Toggle -->
+            <LinearLayout
+                android:id="@+id/itemLocationToggle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_status_item"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📡"
+                    android:textSize="20sp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Location Toggle"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Tap to manage Android Location Services / GPS"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvLocationToggleValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
@@ -414,13 +469,14 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvAccessibilityPath"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Settings → Accessibility\n→ Downloaded Apps\n→ Kaiko Emergency Trigger Listener\n→ ON"
+                android:lineSpacingExtra="4dp"
+                android:text="Settings → Accessibility → Downloaded Apps\n→ Kaiko Emergency Trigger Listener → ON"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnOpenAccessibility"

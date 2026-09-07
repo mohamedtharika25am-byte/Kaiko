@@ -2,6 +2,34 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.4.1] — 2026-09-07 09:10 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `testReleaseUnitTest`)  
+> **Release Artifact:** `release/v1.4.1/Kaiko-v1.4.1.apk` (5.2 MB)  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 10  
+
+### Location + SOS Notification + System Status + Accessibility UI Fixes
+- **Location Permission + GPS Flow Fix**:
+  - When both Permission and GPS Toggle are OFF, Kaiko Location Permission is requested FIRST.
+  - If granted, directly prompts the native Google/Android GPS toggle resolution dialog.
+  - If user turns GPS ON, re-checks and sends SOS with Google Maps coordinate link.
+  - If user denies/ignores permission, waits maximum 5s and sends SOS without location.
+  - If permission is already ON, skips permission request and directly checks GPS toggle.
+  - If GPS is already ON, immediately acquires current location and dispatches SOS with Maps link.
+  - Fixed transparent host activity by removing `windowIsFloating` and `noHistory` so permission dialogs are never blocked.
+- **Active SOS Notification Update (4 Buttons)**:
+  - Replaced old notification actions with 4 new actions: 🟢 I'M SAFE, 🚨 EMERGENCY, ⚠️ MISTOUCHED, 🧪 TEST.
+  - Removed old "Simulate Ack [TEST]" action from notification.
+  - Dedicated Mistouched message: *"⚠️ KAIKO UPDATE: SOS was triggered by mistake. No emergency. Escalation stopped."* sent only to alerted guardians.
+- **System Status Location Split**:
+  - Split into 2 independently clickable items:
+    - 📍 **Location Permission** (ON/OFF, tap to manage permission)
+    - 📡 **Location Toggle** (ON/OFF, tap to manage Android Location Services / GPS)
+- **Accessibility Setup Path 2-Line Layout**:
+  - Formatted into exactly 2 readable lines:
+    - Line 1: `Settings → Accessibility → Downloaded Apps`
+    - Line 2: `→ Kaiko Emergency Trigger Listener → ON`
+- **Release Artifact**: Preserved all prior releases and generated `release/v1.4.1/Kaiko-v1.4.1.apk`.
+
 ## [v1.4.0] — 2026-09-06 23:33 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `testReleaseUnitTest`)  
 > **Release Artifact:** `release/v1.4.0/Kaiko-v1.4.0.apk` (5.2 MB)  

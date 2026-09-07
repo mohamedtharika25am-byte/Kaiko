@@ -174,14 +174,21 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, UserGuideActivity::class.java))
         }
 
-        // 3. System Status: Location item
-        binding.itemLocationStatus.setOnClickListener {
+        // 3. System Status: Location Permission item
+        binding.itemLocationPermission.setOnClickListener {
             if (!TriggerManager.hasLocationPermission(this)) {
                 requestAppPermissions()
-            } else if (!TriggerManager.isLocationServiceEnabled(this)) {
+            } else {
+                Toast.makeText(this, "Location Permission is already ON", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 4. System Status: Location Toggle item
+        binding.itemLocationToggle.setOnClickListener {
+            if (!TriggerManager.isLocationServiceEnabled(this)) {
                 promptLocationServices()
             } else {
-                Toast.makeText(this, "Location permission & GPS Toggle are ON", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Location Services / GPS Toggle is ON", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -221,9 +228,9 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("Mistouched?")
                 .setMessage("This will stop the current SOS escalation.")
                 .setPositiveButton("YES, STOP") { _, _ ->
-                    TriggerManager.markUserSafe(this)
+                    TriggerManager.handleMistouched(this)
                     updateActiveSosBanner()
-                    Toast.makeText(this, "SOS escalation stopped.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "SOS stopped: Mistouched update sent.", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("KEEP SOS ACTIVE") { dialog, _ ->
                     dialog.dismiss()
@@ -333,16 +340,24 @@ class MainActivity : AppCompatActivity() {
      * 3. Guardians: X guardians configured
      */
     private fun updateSystemStatus() {
-        // 1. Location Status
+        // 1. Location Permission
         val locPerm = TriggerManager.hasLocationPermission(this)
-        val gpsEnabled = TriggerManager.isLocationServiceEnabled(this)
-        val locationOn = locPerm && gpsEnabled
-        if (locationOn) {
-            binding.tvLocationStatusValue.text = "ON"
-            binding.tvLocationStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        if (locPerm) {
+            binding.tvLocationPermissionValue.text = "ON"
+            binding.tvLocationPermissionValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
         } else {
-            binding.tvLocationStatusValue.text = "OFF"
-            binding.tvLocationStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
+            binding.tvLocationPermissionValue.text = "OFF"
+            binding.tvLocationPermissionValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
+        }
+
+        // 2. Location Toggle (GPS)
+        val gpsEnabled = TriggerManager.isLocationServiceEnabled(this)
+        if (gpsEnabled) {
+            binding.tvLocationToggleValue.text = "ON"
+            binding.tvLocationToggleValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvLocationToggleValue.text = "OFF"
+            binding.tvLocationToggleValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
         }
 
         // 2. Accessibility Status
