@@ -85,7 +85,6 @@ class MainActivity : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences(TriggerManager.PREFS_NAME, Context.MODE_PRIVATE)
 
-        loadSavedConfiguration()
         setupListeners()
         updateActiveSosBanner()
         updateSystemStatus()
@@ -133,34 +132,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadSavedConfiguration() {
-        // Guardian 1 (Preserves existing data from KEY_GUARDIAN_PHONE)
-        val g1 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_PHONE, "")
-        binding.etGuardian1.setText(g1)
-
-        // Guardian 2
-        val g2 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_2_PHONE, "")
-        binding.etGuardian2.setText(g2)
-
-        // Guardian 3
-        val g3 = sharedPreferences.getString(TriggerManager.KEY_GUARDIAN_3_PHONE, "")
-        binding.etGuardian3.setText(g3)
-
-        // Final Helpline
-        val helpline = sharedPreferences.getString(TriggerManager.KEY_FINAL_HELPLINE_PHONE, "")
-        binding.etHelpline.setText(helpline)
-
-        // Escalation Delay
-        val delay = sharedPreferences.getLong(
-            TriggerManager.KEY_ESCALATION_DELAY_SECONDS,
-            TriggerManager.DEFAULT_ESCALATION_DELAY_SECONDS
-        )
-        when (delay) {
-            30L -> binding.rbDelay30.isChecked = true
-            120L -> binding.rbDelay120.isChecked = true
-            else -> binding.rbDelay60.isChecked = true
-        }
-    }
 
     private fun setupListeners() {
         // 1. Top Large Circular SOS Button
@@ -197,10 +168,9 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
-        // 5. System Status: Guardians item -> Open existing Manage Guardians card
+        // 5. System Status: Guardians item -> Open Manage Guardians screen
         binding.itemGuardiansStatus.setOnClickListener {
-            binding.scrollView.smoothScrollTo(0, binding.cardConfig.top)
-            binding.etGuardian1.requestFocus()
+            startActivity(Intent(this, ManageGuardiansActivity::class.java))
         }
 
         // 6. Accessibility Management Button
@@ -246,66 +216,9 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Test stopped. No SMS sent.", Toast.LENGTH_SHORT).show()
         }
 
-        // 11. Save Contacts Button
-        binding.btnSaveAndEnable.setOnClickListener {
-            val g1 = binding.etGuardian1.text.toString().trim()
-            val g2 = binding.etGuardian2.text.toString().trim()
-            val g3 = binding.etGuardian3.text.toString().trim()
-            val helpline = binding.etHelpline.text.toString().trim()
-
-            // 1. Validate Guardian 1 (Mandatory)
-            if (g1.isEmpty()) {
-                binding.etGuardian1.error = "Guardian 1 phone number is required"
-                binding.etGuardian1.requestFocus()
-                return@setOnClickListener
-            }
-            if (!isValidPhoneNumber(g1)) {
-                binding.etGuardian1.error = "Please enter a valid phone number"
-                binding.etGuardian1.requestFocus()
-                return@setOnClickListener
-            }
-
-            // 2. Validate optional guardians
-            if (g2.isNotEmpty() && !isValidPhoneNumber(g2)) {
-                binding.etGuardian2.error = "Please enter a valid phone number"
-                binding.etGuardian2.requestFocus()
-                return@setOnClickListener
-            }
-            if (g3.isNotEmpty() && !isValidPhoneNumber(g3)) {
-                binding.etGuardian3.error = "Please enter a valid phone number"
-                binding.etGuardian3.requestFocus()
-                return@setOnClickListener
-            }
-
-            // 3. Prevent duplicates
-            val contactList = listOfNotNull(
-                g1.ifEmpty { null },
-                g2.ifEmpty { null },
-                g3.ifEmpty { null }
-            )
-            if (contactList.size != contactList.distinct().size) {
-                Toast.makeText(this, "Error: Duplicate guardian phone numbers detected", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 4. Save Escalation Delay
-            val delay = when {
-                binding.rbDelay30.isChecked -> 30L
-                binding.rbDelay120.isChecked -> 120L
-                else -> 60L
-            }
-
-            sharedPreferences.edit()
-                .putString(TriggerManager.KEY_GUARDIAN_PHONE, g1)
-                .putString(TriggerManager.KEY_GUARDIAN_2_PHONE, g2)
-                .putString(TriggerManager.KEY_GUARDIAN_3_PHONE, g3)
-                .putString(TriggerManager.KEY_FINAL_HELPLINE_PHONE, helpline)
-                .putLong(TriggerManager.KEY_ESCALATION_DELAY_SECONDS, delay)
-                .apply()
-
-            Toast.makeText(this, "Configuration saved successfully!", Toast.LENGTH_SHORT).show()
-            updateSystemStatus()
-            requestAppPermissions()
+        // 11. Home Button: 👥 MANAGE GUARDIANS (v1.5.1)
+        binding.btnManageGuardiansHome.setOnClickListener {
+            startActivity(Intent(this, ManageGuardiansActivity::class.java))
         }
     }
 

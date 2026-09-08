@@ -35,6 +35,9 @@
     <!-- VIBRATE: Tactile feedback on emergency trigger -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- READ_CONTACTS: Select emergency guardians from phone contacts -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -62,6 +65,12 @@
         <activity
             android:name=".UserGuideActivity"
             android:exported="false" />
+
+        <!-- Dedicated Manage Guardians screen (v1.5.0) -->
+        <activity
+            android:name=".ManageGuardiansActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Transparent activity to prompt for Location Services / GPS directly on current screen -->
         <activity

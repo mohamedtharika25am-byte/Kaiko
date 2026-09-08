@@ -2,6 +2,43 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.5.1] — 2026-09-07 22:45 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.5.1/Kaiko-v1.5.1.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 13  
+
+### Home Manage Guardians Button & 👤+ Contact Picker Action
+- **Home Screen Manage Guardians Button**:
+  - Added a prominent `👥 MANAGE GUARDIANS` button directly below the existing `MANAGE ACCESSIBILITY` section.
+  - Tapping this button opens the dedicated Manage Guardians page.
+- **Edit Guardian via 👤+ Action**:
+  - Replaced the previous `Edit` button on Guardian Cards with a green `👤+` contact action icon positioned directly on the contact row matching the reference design.
+  - Tapping `👤+` directly opens the native Android Contacts picker to choose/change the emergency guardian.
+- **Strict 10-Digit Phone Number Requirement**:
+  - Enforced that emergency guardian phone numbers must contain exactly 10 digits across manual entry, contact selection, and edit.
+- **Release Artifact**:
+  - Generated `release/v1.5.1/Kaiko-v1.5.1.apk` while preserving all previous releases.
+
+---
+
+## [v1.5.0] — 2026-09-07 19:50 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.5.0/Kaiko-v1.5.0.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 12  
+
+### Dedicated Manage Guardians Page & SOS Delivery Mode
+- **Manage Guardians Second Page**:
+  - Created dedicated `ManageGuardiansActivity` with minimum 3 guardians setup requirement.
+  - Guardian Cards displaying optional Name and Relation (no "Unknown" label), phone number, `📞 Call`, and `💬 Message` actions.
+  - Native Android Contacts picker integration with permission rationale.
+  - Guardian removal restriction enforcing minimum 3 guardians.
+- **SOS Delivery Mode (Simultaneous vs Escalation)**:
+  - Added toggle inside Manage Guardians to send SOS alert to all guardians simultaneously (ON) or follow existing sequential timeout escalation (OFF).
+- **Release Artifact**:
+  - Generated `release/v1.5.0/Kaiko-v1.5.0.apk` preserving all prior releases.
+
+---
+
 ## [v1.4.2] — 2026-09-07 10:21 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `testReleaseUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.4.2/Kaiko-v1.4.2.apk` (5.2 MB)  

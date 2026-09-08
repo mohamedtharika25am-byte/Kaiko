@@ -35,4 +35,35 @@
     <string name="btn_simulate_ack">Simulate Guardian Ack [TEST ONLY]</string>
     <string name="active_sos_title">⚠️ ACTIVE EMERGENCY IN PROGRESS</string>
     <string name="lockscreen_toggle_label">Enable Lock-Screen Quick Trigger</string>
+
+    <!-- Manage Guardians v1.5.0 Strings -->
+    <string name="title_manage_guardians">Manage Guardians</string>
+    <string name="add_guardian_btn">+ ADD GUARDIAN</string>
+    <string name="choose_from_contacts_btn">📱 CHOOSE FROM CONTACTS</string>
+    <string name="add_manually_btn">ADD MANUALLY</string>
+    <string name="save_guardian_btn">SAVE GUARDIAN</string>
+    <string name="min_guardians_warning">Kaiko requires at least 3 guardians.</string>
+    <string name="contacts_permission_rationale">Allow Kaiko to access your contacts to select an emergency guardian.</string>
+    <string name="sos_delivery_title">SOS DELIVERY</string>
+    <string name="sos_delivery_label">Send SOS to all guardians at once</string>
+    <string name="sos_delivery_off_desc">OFF\nGuardian 1 → Guardian 2 → Guardian 3</string>
+    <string name="sos_delivery_on_desc">ON\nAll guardians receive SOS simultaneously</string>
+
+    <string-array name="guardian_relations">
+        <item>Select Relation (Optional)</item>
+        <item>Father</item>
+        <item>Mother</item>
+        <item>Brother</item>
+        <item>Sister</item>
+        <item>Grandfather</item>
+        <item>Grandmother</item>
+        <item>Relative</item>
+        <item>Friend</item>
+        <item>Classmate</item>
+        <item>Teacher</item>
+        <item>Mentor</item>
+        <item>Neighbor</item>
+        <item>Guardian</item>
+        <item>Other</item>
+    </string-array>
 </resources>

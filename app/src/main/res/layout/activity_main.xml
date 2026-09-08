@@ -500,185 +500,19 @@
 
         </LinearLayout>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="@color/divider_color" />
-
         <!-- ============================================================= -->
-        <!-- MULTIPLE GUARDIANS CONFIGURATION CARD -->
+        <!-- MANAGE GUARDIANS BUTTON (v1.5.1) -->
         <!-- ============================================================= -->
-        <LinearLayout
-            android:id="@+id/cardConfig"
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnManageGuardiansHome"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="18dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="EMERGENCY ESCALATION CONTACTS"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <!-- Guardian 1 (Mandatory) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/guardian_1_label"
-                android:textColor="@color/text_primary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <EditText
-                android:id="@+id/etGuardian1"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:background="@drawable/bg_input"
-                android:hint="@string/guardian_phone_hint"
-                android:importantForAutofill="no"
-                android:inputType="phone"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:textSize="15sp" />
-
-            <!-- Guardian 2 (Optional) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/guardian_2_label"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/etGuardian2"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:background="@drawable/bg_input"
-                android:hint="Optional secondary contact"
-                android:importantForAutofill="no"
-                android:inputType="phone"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:textSize="15sp" />
-
-            <!-- Guardian 3 (Optional) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/guardian_3_label"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/etGuardian3"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:background="@drawable/bg_input"
-                android:hint="Optional tertiary contact"
-                android:importantForAutofill="no"
-                android:inputType="phone"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:textSize="15sp" />
-
-            <!-- Final Helpline / Backup Contact (Optional) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/helpline_label"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/etHelpline"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:background="@drawable/bg_input"
-                android:hint="Optional final backup contact"
-                android:importantForAutofill="no"
-                android:inputType="phone"
-                android:paddingHorizontal="14dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
-                android:textSize="15sp" />
-
-            <!-- Escalation Delay Selector (Testing) -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:text="@string/escalation_timeout_label"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <RadioGroup
-                android:id="@+id/rgEscalationDelay"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <RadioButton
-                    android:id="@+id/rbDelay30"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="30s"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <RadioButton
-                    android:id="@+id/rbDelay60"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:checked="true"
-                    android:text="60s"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <RadioButton
-                    android:id="@+id/rbDelay120"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="120s"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-            </RadioGroup>
-
-            <!-- Save Contacts Button -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnSaveAndEnable"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="18dp"
-                android:background="@drawable/bg_button_primary"
-                android:text="@string/btn_save_and_enable"
-                android:textColor="@color/on_primary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_button_primary"
+            android:text="👥  MANAGE GUARDIANS"
+            android:textColor="@color/on_primary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 

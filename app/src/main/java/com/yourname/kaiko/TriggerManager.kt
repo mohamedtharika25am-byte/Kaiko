@@ -35,6 +35,17 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
+import org.json.JSONArray
+import org.json.JSONObject
+
+/**
+ * Emergency Guardian representation for Kaiko v1.5.0.
+ */
+data class Guardian(
+    val name: String = "",
+    val relation: String = "",
+    val phone: String = ""
+)
 
 /**
  * Central Orchestrator & State Machine for Kaiko Emergency Operations (v1.2.1).
@@ -73,6 +84,10 @@ object TriggerManager {
     const val KEY_GUARDIAN_2_PHONE = "guardian_2_phone_number"
     const val KEY_GUARDIAN_3_PHONE = "guardian_3_phone_number"
     const val KEY_FINAL_HELPLINE_PHONE = "final_helpline_phone_number"
+
+    // Guardian Storage v1.5.0
+    const val KEY_GUARDIANS_DATA = "guardians_data_json"
+    const val KEY_SOS_DELIVERY_ALL_AT_ONCE = "sos_delivery_all_at_once"
 
     // Configuration Keys
     const val KEY_ESCALATION_DELAY_SECONDS = "escalation_delay_seconds"
@@ -194,14 +209,48 @@ object TriggerManager {
                 Log.d(TAG, "Initial Location unavailable for Guardian 1.")
             }
 
-            // Dispatch to Guardian 1
-            dispatchToGuardianInternal(
-                context = context,
-                guardianIndex = 1,
-                locationStatus = locationStatus,
-                coords = coords,
-                isRetry = false
-            )
+            // Check SOS Delivery Mode: Simultaneous (ON) vs Sequential Escalation (OFF)
+            if (isSosDeliveryAllAtOnce(context)) {
+                val configuredGuardians = getAllGuardians(context).filter { it.phone.isNotBlank() }
+                if (configuredGuardians.isEmpty()) {
+                    Log.w(TAG, "Simultaneous SOS Delivery: No guardians configured to alert.")
+                    return@launch
+                }
+
+                updateState(context, SosState.WAITING_FOR_GUARDIAN_1)
+                val smsText = buildEmergencyMessage(triggerMode, locationStatus, coords)
+
+                for ((idx, guardian) in configuredGuardians.withIndex()) {
+                    val phone = guardian.phone
+                    Log.i(TAG, "Simultaneous SOS Delivery: Alerting Guardian ${idx + 1} ($phone)")
+                    addAlertedGuardian(context, phone)
+                    sendSms(context, phone, smsText, guardianIndex = idx + 1, isRetry = false)
+                }
+
+                if (triggerMode != TRIGGER_DISCREET_SAFETY) {
+                    val coordsDisplay = when (locationStatus) {
+                        LocationStatus.CURRENT -> "Current: $coords"
+                        LocationStatus.LAST_KNOWN -> "Last Known: $coords"
+                        LocationStatus.UNAVAILABLE -> "Location unavailable"
+                    }
+                    postEmergencyNotification(
+                        context,
+                        SosState.WAITING_FOR_GUARDIAN_1,
+                        "All Guardians (${configuredGuardians.size})",
+                        coordsDisplay,
+                        eventId
+                    )
+                }
+            } else {
+                // Dispatch to Guardian 1 (Sequential escalation mode: OFF)
+                dispatchToGuardianInternal(
+                    context = context,
+                    guardianIndex = 1,
+                    locationStatus = locationStatus,
+                    coords = coords,
+                    isRetry = false
+                )
+            }
         }
     }
 
@@ -297,7 +346,8 @@ object TriggerManager {
 
         if (phone.isNullOrBlank()) {
             Log.w(TAG, "Guardian $guardianIndex not configured. Skipping to next escalation step...")
-            if (guardianIndex < 3) {
+            val totalGuardians = getAllGuardians(context).count { it.phone.isNotBlank() }
+            if (guardianIndex < totalGuardians) {
                 dispatchToGuardian(context, guardianIndex + 1, isRetry = false)
             } else {
                 transitionToFinalEscalation(context)
@@ -564,7 +614,8 @@ object TriggerManager {
         val currentIndex = prefs.getInt(KEY_ACTIVE_GUARDIAN_INDEX, 1)
         Log.w(TAG, "Escalation timeout elapsed for Guardian $currentIndex without acknowledgement.")
 
-        if (currentIndex < 3) {
+        val totalGuardians = getAllGuardians(context).count { it.phone.isNotBlank() }
+        if (currentIndex < totalGuardians) {
             val nextIndex = currentIndex + 1
             Log.i(TAG, "Escalating from Guardian $currentIndex -> Guardian $nextIndex")
             dispatchToGuardian(context, nextIndex, isRetry = false)
@@ -873,8 +924,9 @@ object TriggerManager {
         // Button 2 (Dynamic): If next guardian exists -> 🚨 EMERGENCY; else -> 🧪 TEST
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val currentIndex = prefs.getInt(KEY_ACTIVE_GUARDIAN_INDEX, 1)
-        val hasNextGuardian = (currentIndex < 3 && !getGuardianPhone(context, currentIndex + 1).isNullOrBlank()) ||
-                              (currentIndex >= 3 && !getFinalHelpline(context).isNullOrBlank())
+        val totalGuardians = getAllGuardians(context).count { it.phone.isNotBlank() }
+        val hasNextGuardian = (currentIndex < totalGuardians && !getGuardianPhone(context, currentIndex + 1).isNullOrBlank()) ||
+                              (currentIndex >= totalGuardians && !getFinalHelpline(context).isNullOrBlank())
 
         if (hasNextGuardian) {
             notificationBuilder.addAction(android.R.drawable.stat_sys_warning, "🚨 EMERGENCY", emergencyPendingIntent)
@@ -914,7 +966,82 @@ object TriggerManager {
         }
     }
 
+    fun getAllGuardians(context: Context): List<Guardian> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val jsonString = prefs.getString(KEY_GUARDIANS_DATA, null)
+        if (!jsonString.isNullOrBlank()) {
+            try {
+                val jsonArray = JSONArray(jsonString)
+                val list = mutableListOf<Guardian>()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    list.add(
+                        Guardian(
+                            name = obj.optString("name", ""),
+                            relation = obj.optString("relation", ""),
+                            phone = obj.optString("phone", "")
+                        )
+                    )
+                }
+                if (list.isNotEmpty()) return list
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing guardians json: ${e.message}")
+            }
+        }
+
+        // Backward compatibility migration from legacy keys
+        val list = mutableListOf<Guardian>()
+        val g1 = prefs.getString(KEY_GUARDIAN_PHONE, "")?.trim() ?: ""
+        val g2 = prefs.getString(KEY_GUARDIAN_2_PHONE, "")?.trim() ?: ""
+        val g3 = prefs.getString(KEY_GUARDIAN_3_PHONE, "")?.trim() ?: ""
+        if (g1.isNotBlank()) list.add(Guardian(phone = g1))
+        if (g2.isNotBlank()) list.add(Guardian(phone = g2))
+        if (g3.isNotBlank()) list.add(Guardian(phone = g3))
+
+        if (list.isNotEmpty()) {
+            saveGuardians(context, list)
+        }
+        return list
+    }
+
+    fun saveGuardians(context: Context, guardians: List<Guardian>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val jsonArray = JSONArray()
+        for (g in guardians) {
+            val obj = JSONObject()
+            obj.put("name", g.name)
+            obj.put("relation", g.relation)
+            obj.put("phone", g.phone)
+            jsonArray.put(obj)
+        }
+
+        val editor = prefs.edit()
+        editor.putString(KEY_GUARDIANS_DATA, jsonArray.toString())
+
+        // Always sync legacy keys (first 3) so existing receivers/widgets never break
+        editor.putString(KEY_GUARDIAN_PHONE, guardians.getOrNull(0)?.phone ?: "")
+        editor.putString(KEY_GUARDIAN_2_PHONE, guardians.getOrNull(1)?.phone ?: "")
+        editor.putString(KEY_GUARDIAN_3_PHONE, guardians.getOrNull(2)?.phone ?: "")
+        editor.apply()
+        Log.d(TAG, "Guardians saved: ${guardians.size} guardians configured.")
+    }
+
+    fun isSosDeliveryAllAtOnce(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_SOS_DELIVERY_ALL_AT_ONCE, false)
+    }
+
+    fun setSosDeliveryAllAtOnce(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_SOS_DELIVERY_ALL_AT_ONCE, enabled).apply()
+        Log.d(TAG, "SOS Delivery All At Once setting set to: $enabled")
+    }
+
     fun getGuardianPhone(context: Context, index: Int): String? {
+        val guardians = getAllGuardians(context)
+        val phone = guardians.getOrNull(index - 1)?.phone?.trim()
+        if (!phone.isNullOrBlank()) return phone
+
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return when (index) {
             1 -> prefs.getString(KEY_GUARDIAN_PHONE, null)
@@ -929,12 +1056,7 @@ object TriggerManager {
      * Does NOT calculate Active/Inactive guardian counts.
      */
     fun getConfiguredGuardiansCount(context: Context): Int {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var count = 0
-        if (!prefs.getString(KEY_GUARDIAN_PHONE, null).isNullOrBlank()) count++
-        if (!prefs.getString(KEY_GUARDIAN_2_PHONE, null).isNullOrBlank()) count++
-        if (!prefs.getString(KEY_GUARDIAN_3_PHONE, null).isNullOrBlank()) count++
-        return count
+        return getAllGuardians(context).count { it.phone.isNotBlank() }
     }
 
     fun getFinalHelpline(context: Context): String? {

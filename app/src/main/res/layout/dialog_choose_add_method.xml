@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Emergency Guardian"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Choose how you would like to add this guardian:"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <!-- Choose from contacts button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnChooseContacts"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_button_secondary"
+        android:text="@string/choose_from_contacts_btn"
+        android:textColor="@color/on_secondary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Add manually button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnAddManually"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_button_outline"
+        android:text="@string/add_manually_btn"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Cancel button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnCancelAddMethod"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="?attr/selectableItemBackground"
+        android:text="CANCEL"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+</LinearLayout>
