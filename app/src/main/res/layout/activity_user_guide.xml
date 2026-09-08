@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Top Bar with Back Button -->
+    <!-- Top Bar with Back Button (BLUE: Navigation & Heading) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -20,14 +21,14 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
             android:src="@android:drawable/ic_menu_revert"
-            android:tint="@color/text_primary" />
+            app:tint="@color/primary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:text="Kaiko User Guide"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/primary"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -41,182 +42,216 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="20dp">
+        android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- WHAT IS KAIKO? -->
-            <TextView
+            <!-- WHAT IS KAIKO? (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="WHAT IS KAIKO?"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="WHAT IS KAIKO?"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Kaiko is an emergency alert app that helps you quickly dispatch SOS distress alerts to configured guardians."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- HOW TO TRIGGER SOS (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Kaiko is an emergency alert app that helps you quickly send an SOS alert to configured guardians."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="3dp" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="HOW TO TRIGGER SOS"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <!-- HOW TO TRIGGER SOS -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="HOW TO TRIGGER SOS"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="• App SOS Button: Tap the large circular SOS button on the home screen.\n• Volume Down 3× Press: Press the hardware Volume Down button 3 times quickly.\n• Normal Widget: Tap the home screen SOS widget for instant alert dispatch.\n• Discreet Safety Trigger: Silently sends emergency alert without opening app or UI.\n• Voice Trigger: Speak an emergency phrase aloud without needing any wake word."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="• App SOS Button: Tap the large circular SOS button on the home screen.\n• Volume Down 3× Press: Press the hardware Volume Down button 3 times quickly.\n• Normal Widget: Tap the home screen SOS widget for instant alert dispatch.\n• Discreet Safety Trigger: Silently sends emergency alert without opening app or UI."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+            </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
-
-            <!-- 3× PRESS SETUP -->
-            <TextView
+            <!-- VOICE TRIGGER FEATURE (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="3× PRESS SETUP"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="VOICE TRIGGER FEATURE"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="• Hands-Free Detection: Voice Trigger continuously listens for emergency phrases while enabled.\n• No Wake Word: You do NOT need to say &quot;Hey Kaiko&quot; or any prefix.\n• Default Emergency Phrases:\n   - &quot;I need help&quot;\n   - &quot;I am in danger&quot;\n   - &quot;Help me&quot;\n   - &quot;This is an emergency&quot;\n   - &quot;Send SOS&quot;\n• Custom Phrase: Add your own personal emergency phrase via text input (e.g. &quot;I need immediate help&quot;).\n• Android OS Limitation: Continuous microphone listening is active while Kaiko is open on screen. Android OS microphone privacy policies restrict continuous background listening when the app is closed."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- 3× PRESS SETUP (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Accessibility Service is required for the Volume Down 3× emergency trigger.\n\nEnable via:\nSettings → Accessibility\n→ Downloaded Apps\n→ Kaiko Emergency Trigger Listener\n→ ON"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="3dp" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="3× PRESS SETUP"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <!-- LOCATION -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="LOCATION"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="Accessibility Service is required for the Volume Down 3× emergency trigger.\n\nEnable via:\nSettings → Accessibility\n→ Downloaded Apps\n→ Kaiko Emergency Trigger Listener\n→ ON"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="• Location permission allows Kaiko to include your current location link in an SOS.\n• Android Location Services / GPS Toggle must be ON for location detection.\n• If location is unavailable, SOS can still be sent without location."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+            </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
-
-            <!-- GUARDIANS -->
-            <TextView
+            <!-- LOCATION (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="GUARDIANS"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="LOCATION"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="• Location permission allows Kaiko to include your current location link in an SOS.\n• Android Location Services / GPS Toggle must be ON for location detection.\n• If location is unavailable, SOS can still be sent without location."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- GUARDIANS & SOS DELIVERY (LIGHT BLUE CARD) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="• Guardians are trusted contacts who receive SOS alerts.\n• SOS escalation can move to the next guardian according to the configured escalation behavior."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="GUARDIANS &amp; SOS DELIVERY"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <!-- DURING AN ACTIVE SOS -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="DURING AN ACTIVE SOS"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="• Kaiko requires at least 3 emergency guardians.\n• Simultaneous Delivery: When ON, all guardians receive the emergency SMS simultaneously.\n• Sequential Escalation: When OFF, alerts escalate sequentially (Guardian 1 → Guardian 2 → Guardian 3)."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="🟢 I\'M SAFE\nStop the current SOS escalation and send the safe update.\n\n🚨 EMERGENCY\nImmediately escalate to the next guardian without waiting for the normal timeout.\n\n⚠️ MISTOUCHED\nConfirm before stopping the current SOS escalation.\n\n🧪 TEST\nStop the current escalation for testing only. No new SOS SMS or guardian notification is sent."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+            </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginVertical="16dp"
-                android:background="@color/divider_color" />
-
-            <!-- IMPORTANT -->
-            <TextView
+            <!-- DURING AN ACTIVE SOS (VERY LIGHT RED CARD) -->
+            <!-- VERY LIGHT RED CARDS/BOXES: Use ONLY for emergency/SOS-related sections -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="IMPORTANT"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_emergency"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="24dp"
-                android:text="• Make sure guardian phone numbers are correctly configured.\n• Keep Location permission enabled if location-based SOS is required.\n• Keep Accessibility enabled if using the 3× Press trigger."
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="DURING AN ACTIVE SOS"
+                    android:textColor="@color/emergency_red"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="🟢 I'M SAFE\nStop the current SOS escalation and send the safe update.\n\n🚨 EMERGENCY\nImmediately escalate to the next guardian without waiting for the normal timeout.\n\n⚠️ MISTOUCHED\nConfirm before stopping the current SOS escalation.\n\n🧪 TEST\nStop the current escalation for testing only. No new SOS SMS or guardian notification is sent."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

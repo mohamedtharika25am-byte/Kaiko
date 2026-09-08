@@ -117,4 +117,53 @@ class TriggerManagerTest {
         assertTrue(SosState.WAITING_FOR_GUARDIAN_3.isActive())
         assertTrue(SosState.FINAL_ESCALATION_REQUIRED.isActive())
     }
+
+    @Test
+    fun testNormalizeTriggerSourceVoice() {
+        assertEquals(
+            TriggerManager.TRIGGER_VOICE,
+            TriggerManager.normalizeTriggerSource("voice")
+        )
+        assertEquals(
+            TriggerManager.TRIGGER_VOICE,
+            TriggerManager.normalizeTriggerSource("voice_trigger")
+        )
+        assertEquals(
+            TriggerManager.TRIGGER_VOICE,
+            TriggerManager.normalizeTriggerSource("Voice Safety Trigger")
+        )
+    }
+
+    @Test
+    fun testEmergencyMessageVoiceTrigger() {
+        val msg = TriggerManager.buildEmergencyMessage(
+            TriggerManager.TRIGGER_VOICE,
+            TriggerManager.LocationStatus.CURRENT,
+            "11.0168,76.9558"
+        )
+        assertTrue(msg.contains("🚨 KAIKO SOS ALERT"))
+        assertTrue(msg.contains("Voice Safety Trigger"))
+        assertTrue(msg.contains("📍 Current Location:"))
+        assertTrue(msg.contains("https://maps.google.com/?q=11.0168,76.9558"))
+    }
+
+    @Test
+    fun testVoiceTextNormalization() {
+        assertEquals("i need help", VoiceTriggerManager.normalizeText("I need help!"))
+        assertEquals("help me", VoiceTriggerManager.normalizeText("...Help ME???"))
+        assertEquals("i am in danger", VoiceTriggerManager.normalizeText("  I AM   IN DANGER.  "))
+        assertEquals("this is an emergency", VoiceTriggerManager.normalizeText("THIS IS AN EMERGENCY!"))
+        assertEquals("send sos", VoiceTriggerManager.normalizeText("Send SOS"))
+    }
+
+    @Test
+    fun testDefaultEmergencyPhrasesList() {
+        val defaults = TriggerManager.getDefaultEmergencyPhrases()
+        assertEquals(5, defaults.size)
+        assertTrue(defaults.contains("I need help"))
+        assertTrue(defaults.contains("I am in danger"))
+        assertTrue(defaults.contains("Help me"))
+        assertTrue(defaults.contains("This is an emergency"))
+        assertTrue(defaults.contains("Send SOS"))
+    }
 }

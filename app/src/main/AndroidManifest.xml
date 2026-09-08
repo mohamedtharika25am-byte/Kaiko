@@ -38,6 +38,16 @@
     <!-- READ_CONTACTS: Select emergency guardians from phone contacts -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- RECORD_AUDIO: Hands-free Voice Trigger safety feature (v1.6.0) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Android 11+ Package Visibility Queries for Speech Recognition -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

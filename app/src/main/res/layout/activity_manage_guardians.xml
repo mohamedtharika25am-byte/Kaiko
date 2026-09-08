@@ -7,7 +7,7 @@
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Top Bar with Back Button -->
+    <!-- Top Bar with Back Button (BLUE: Navigation & Icons) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -21,14 +21,14 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
             android:src="@android:drawable/ic_menu_revert"
-            app:tint="@color/text_primary" />
+            app:tint="@color/primary" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:text="@string/title_manage_guardians"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/primary"
             android:textSize="20sp"
             android:textStyle="bold" />
 
@@ -89,16 +89,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
-            <!-- Add Guardian Button -->
+            <!-- Add Guardian Button (BLUE: Regular actions/buttons) -->
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnAddGuardian"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="20dp"
-                android:background="@drawable/bg_button_secondary"
+                android:background="@drawable/bg_button_primary"
                 android:text="@string/add_guardian_btn"
-                android:textColor="@color/on_secondary"
+                android:textColor="@color/on_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -109,13 +109,13 @@
                 android:background="@color/divider_color" />
 
             <!-- ========================================================= -->
-            <!-- SOS DELIVERY MODE SECTION -->
+            <!-- SOS DELIVERY MODE SECTION (LIGHT BLUE CARD) -->
             <!-- ========================================================= -->
             <LinearLayout
                 android:id="@+id/cardSosDelivery"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
+                android:background="@drawable/bg_card_light_blue"
                 android:orientation="vertical"
                 android:padding="16dp">
 
@@ -124,7 +124,7 @@
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.08"
                     android:text="@string/sos_delivery_title"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -139,8 +139,8 @@
                         android:layout_height="wrap_content"
                         android:layout_alignParentStart="true"
                         android:layout_centerVertical="true"
-                        android:layout_toStartOf="@+id/switchDeliveryMode"
                         android:layout_marginEnd="12dp"
+                        android:layout_toStartOf="@+id/switchDeliveryMode"
                         android:text="@string/sos_delivery_label"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"

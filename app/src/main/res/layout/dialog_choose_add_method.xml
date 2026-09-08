@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Add Emergency Guardian"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/primary"
         android:textSize="18sp"
         android:textStyle="bold" />
 
@@ -22,15 +22,15 @@
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
-    <!-- Choose from contacts button -->
+    <!-- Choose from contacts button (BLUE: Regular action) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnChooseContacts"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginTop="18dp"
-        android:background="@drawable/bg_button_secondary"
+        android:background="@drawable/bg_button_primary"
         android:text="@string/choose_from_contacts_btn"
-        android:textColor="@color/on_secondary"
+        android:textColor="@color/on_primary"
         android:textSize="14sp"
         android:textStyle="bold" />
 
@@ -42,11 +42,11 @@
         android:layout_marginTop="10dp"
         android:background="@drawable/bg_button_outline"
         android:text="@string/add_manually_btn"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/primary"
         android:textSize="14sp"
         android:textStyle="bold" />
 
-    <!-- Cancel button -->
+    <!-- Cancel button (GREY) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnCancelAddMethod"
         android:layout_width="match_parent"

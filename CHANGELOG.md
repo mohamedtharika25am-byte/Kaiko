@@ -2,6 +2,43 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.6.0] — 2026-09-08 19:15 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.6.0/Kaiko-v1.6.0.apk` (5.25 MB)  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 14  
+
+### Voice Trigger Safety Feature & White/Light Design System
+- **Voice Trigger Safety Feature**:
+  - Added Voice Trigger ON/OFF control with real-time status indication.
+  - Emergency phrases trigger directly without any wake word ("Hey Kaiko").
+  - Evaluates default emergency phrases:
+    - "I need help"
+    - "I am in danger"
+    - "Help me"
+    - "This is an emergency"
+    - "Send SOS"
+  - Added Custom Voice Phrase support:
+    - Entered via text input field (dialog) instead of voice recording.
+    - User can enable/disable, add/change, and remove custom phrase at any time.
+    - Stored locally using existing local SharedPreferences storage (`kaiko_preferences`).
+  - Integrates directly into existing central SOS pipeline (`TriggerManager.fireAlert(context, TRIGGER_VOICE)`) without modifying existing SOS, SMS, location, notification, or escalation logic.
+  - Built using standard Android `SpeechRecognizer` and `RecognitionListener` APIs with graceful error handling and retry loops.
+  - Clearly reports Android OS background microphone privacy limitations (while-in-use policy; active while Kaiko is open on screen).
+- **Clean White/Light Theme & Consistent Color System**:
+  - **White**: Main app background, surfaces, cards, and normal content areas.
+  - **Blue**: Brand UI, headings, navigation back buttons, icons, and regular action buttons (`👥 MANAGE GUARDIANS`, `MANAGE ACCESSIBILITY`, `+ ADD GUARDIAN`, etc.).
+  - **Red**: Emergency elements ONLY (Main circular SOS button, `🚨 EMERGENCY` active SOS action, active emergency status indicators, removal actions).
+  - **Green**: Safe/success states ONLY (`🟢 I'M SAFE` active SOS action, successful guardian configuration confirmation).
+  - **Grey**: Secondary descriptions, hints, dividers, borders, disabled status items, and neutral/secondary actions (`🧪 TEST`, `CANCEL`).
+  - **Light Blue Cards/Boxes**: Normal settings, features, and info (Voice Trigger card, System Status, Accessibility setup, SOS Delivery Mode, and User Guide sections).
+  - **Very Light Red Cards/Boxes**: Emergency/SOS-related sections ONLY (`cardActiveSos` active emergency controls).
+- **Preserved Existing Features**:
+  - Top Circular SOS button, Volume Down 3× trigger, Normal widget, Discreet safety widget, GPS/Location handling, Guardian management, SOS delivery modes, sequential escalation, active SOS notifications, and Accessibility Service completely intact.
+- **Release Artifact**:
+  - Created `release/v1.6.0/Kaiko-v1.6.0.apk` while preserving all prior APK releases.
+
+---
+
 ## [v1.5.1] — 2026-09-07 22:45 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.5.1/Kaiko-v1.5.1.apk`  

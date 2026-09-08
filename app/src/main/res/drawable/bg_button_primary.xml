@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- BLUE: Regular actions/buttons -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#40FFFFFF">
+    android:color="#60A5FA">
     <item>
         <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#DC2626"
-                android:endColor="#B91C1C"
-                android:angle="45" />
+            <solid android:color="@color/primary" />
             <corners android:radius="12dp" />
         </shape>
     </item>

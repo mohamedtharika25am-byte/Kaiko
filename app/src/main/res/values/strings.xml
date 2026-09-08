@@ -66,4 +66,15 @@
         <item>Guardian</item>
         <item>Other</item>
     </string-array>
+    <!-- Voice Trigger v1.6.0 Strings -->
+    <string name="voice_trigger_title">VOICE TRIGGER</string>
+    <string name="voice_trigger_desc">Hands-free voice recognition for emergency SOS dispatch</string>
+    <string name="voice_trigger_default_header">Default Emergency Phrases (No wake word required):</string>
+    <string name="voice_trigger_custom_header">Custom Emergency Phrase:</string>
+    <string name="voice_trigger_no_custom">No custom phrase configured.</string>
+    <string name="voice_trigger_add_custom">+ ADD CUSTOM PHRASE</string>
+    <string name="voice_trigger_custom_dialog_title">Custom Voice Phrase</string>
+    <string name="voice_trigger_custom_dialog_desc">Enter a phrase using text input. When spoken aloud, Kaiko will immediately trigger the emergency SOS flow.</string>
+    <string name="voice_trigger_custom_hint">e.g. I need immediate help</string>
+    <string name="voice_trigger_limitation_note">Note: Due to Android OS microphone privacy policies, continuous background voice recognition is restricted when the app is closed. Voice Trigger listens actively while Kaiko is open on screen.</string>
 </resources>

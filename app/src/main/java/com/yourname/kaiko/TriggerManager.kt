@@ -78,6 +78,7 @@ object TriggerManager {
     const val TRIGGER_HARDWARE_BUTTON = "Hardware Button Trigger"
     const val TRIGGER_QUICK_ACCESS = "Quick Access Trigger"
     const val TRIGGER_DISCREET_SAFETY = "Discreet Safety Trigger"
+    const val TRIGGER_VOICE = "Voice Safety Trigger"
 
     // Guardian Contact Keys (Preserving existing keys for backward compatibility)
     const val KEY_GUARDIAN_PHONE = "guardian_phone_number"
@@ -88,6 +89,11 @@ object TriggerManager {
     // Guardian Storage v1.5.0
     const val KEY_GUARDIANS_DATA = "guardians_data_json"
     const val KEY_SOS_DELIVERY_ALL_AT_ONCE = "sos_delivery_all_at_once"
+
+    // Voice Trigger Storage
+    const val KEY_VOICE_TRIGGER_ENABLED = "voice_trigger_enabled"
+    const val KEY_CUSTOM_VOICE_PHRASE = "custom_voice_phrase"
+    const val KEY_CUSTOM_VOICE_PHRASE_ENABLED = "custom_voice_phrase_enabled"
 
     // Configuration Keys
     const val KEY_ESCALATION_DELAY_SECONDS = "escalation_delay_seconds"
@@ -136,6 +142,7 @@ object TriggerManager {
             TRIGGER_HARDWARE_BUTTON, "volume_button", "volume_3x", "hardware" -> TRIGGER_HARDWARE_BUTTON
             TRIGGER_QUICK_ACCESS, "widget", "quick_settings_tile", "quick_access" -> TRIGGER_QUICK_ACCESS
             TRIGGER_DISCREET_SAFETY, "disguised_widget", "discreet" -> TRIGGER_DISCREET_SAFETY
+            TRIGGER_VOICE, "voice", "voice_trigger", "voice_safety" -> TRIGGER_VOICE
             else -> TRIGGER_MANUAL_APP
         }
     }
@@ -1364,5 +1371,63 @@ object TriggerManager {
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
+    }
+
+    // =========================================================================
+    // VOICE TRIGGER HELPERS
+    // =========================================================================
+    private val DEFAULT_EMERGENCY_PHRASES = listOf(
+        "I need help",
+        "I am in danger",
+        "Help me",
+        "This is an emergency",
+        "Send SOS"
+    )
+
+    fun getDefaultEmergencyPhrases(): List<String> = DEFAULT_EMERGENCY_PHRASES
+
+    fun isVoiceTriggerEnabled(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_VOICE_TRIGGER_ENABLED, false)
+    }
+
+    fun setVoiceTriggerEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_VOICE_TRIGGER_ENABLED, enabled)
+            .apply()
+    }
+
+    fun getCustomVoicePhrase(context: Context): String {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_CUSTOM_VOICE_PHRASE, "") ?: ""
+    }
+
+    fun setCustomVoicePhrase(context: Context, phrase: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_CUSTOM_VOICE_PHRASE, phrase.trim())
+            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, true)
+            .apply()
+    }
+
+    fun isCustomVoicePhraseEnabled(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, true)
+    }
+
+    fun setCustomVoicePhraseEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, enabled)
+            .apply()
+    }
+
+    fun removeCustomVoicePhrase(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_CUSTOM_VOICE_PHRASE)
+            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, false)
+            .apply()
     }
 }

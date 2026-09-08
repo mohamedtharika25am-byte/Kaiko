@@ -1,25 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#DC2626</color>
-    <color name="primary_variant">#991B1B</color>
+    <!-- Brand / Primary Blues (Normal Kaiko UI, Headings, Icons, Navigation, Regular Actions) -->
+    <color name="primary">#1D4ED8</color>
+    <color name="primary_variant">#1E40AF</color>
     <color name="on_primary">#FFFFFF</color>
-    
-    <color name="secondary">#3B82F6</color>
+
+    <color name="secondary">#2563EB</color>
     <color name="secondary_variant">#1D4ED8</color>
     <color name="on_secondary">#FFFFFF</color>
-    
-    <color name="background">#0F172A</color>
-    <color name="card_background">#1E293B</color>
-    <color name="input_background">#334155</color>
-    <color name="divider_color">#475569</color>
-    
-    <color name="text_primary">#F8FAFC</color>
-    <color name="text_secondary">#94A3B8</color>
-    <color name="text_hint">#64748B</color>
-    
-    <color name="status_enabled">#22C55E</color>
-    <color name="status_disabled">#EF4444</color>
-    
+
+    <!-- White / Light Theme Surfaces (WHITE: Main background, cards/surfaces, normal content areas) -->
+    <color name="background">#FFFFFF</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="content_background">#FFFFFF</color>
+    <color name="input_background">#FFFFFF</color>
+
+    <!-- LIGHT BLUE CARDS/BOXES: Normal settings, information and safety features -->
+    <color name="card_light_blue">#F0F7FF</color>
+    <color name="border_light_blue">#BFDBFE</color>
+
+    <!-- VERY LIGHT RED CARDS/BOXES: Emergency/SOS-related sections ONLY -->
+    <color name="card_light_red">#FEF2F2</color>
+    <color name="border_light_red">#FECACA</color>
+
+    <!-- GREEN: Safe/success states ONLY (I'M SAFE button/action, safe confirmation, success indicators) -->
+    <color name="safe_green">#16A34A</color>
+    <color name="safe_green_dark">#15803D</color>
+    <color name="safe_green_ripple">#4ADE80</color>
+    <color name="card_light_green">#F0FDF4</color>
+    <color name="border_light_green">#86EFAC</color>
+    <color name="status_enabled">#16A34A</color>
+
+    <!-- RED: Emergency/SOS elements ONLY (Main SOS button, emergency action, active SOS indicator/warnings) -->
+    <color name="emergency_red">#DC2626</color>
+    <color name="emergency_red_dark">#B91C1C</color>
+    <color name="emergency_red_ripple">#FCA5A5</color>
+    <color name="emergency_amber">#D97706</color>
+
+    <!-- GREY: Secondary text, hints/descriptions, borders/dividers, disabled controls, neutral/secondary actions -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_hint">#94A3B8</color>
+    <color name="divider_color">#E2E8F0</color>
+    <color name="border_color">#CBD5E1</color>
+    <color name="status_disabled">#64748B</color>
+    <color name="btn_neutral_grey">#64748B</color>
+    <color name="btn_neutral_ripple">#E2E8F0</color>
+
+    <!-- Widgets -->
     <color name="widget_sos_bg">#DC2626</color>
     <color name="widget_sos_ripple">#EF4444</color>
 </resources>

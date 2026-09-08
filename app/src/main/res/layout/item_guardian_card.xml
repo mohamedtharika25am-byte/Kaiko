@@ -8,13 +8,13 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Top Row: Guardian Index (e.g. Guardian 1) -->
+    <!-- Top Row: Guardian Index (BLUE: Heading/Slot indicator) -->
     <TextView
         android:id="@+id/tvGuardianSlot"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:letterSpacing="0.06"
-        android:textColor="@color/secondary"
+        android:textColor="@color/primary"
         android:textSize="12sp"
         android:textStyle="bold"
         tools:text="Guardian 1" />
@@ -32,7 +32,7 @@
         tools:text="👤 John Doe"
         tools:visibility="visible" />
 
-    <!-- Relation (Optional: Only visible if not blank, Never "Unknown") -->
+    <!-- Relation (GREY: Metadata) -->
     <TextView
         android:id="@+id/tvGuardianRelation"
         android:layout_width="wrap_content"
@@ -44,7 +44,7 @@
         tools:text="Father"
         tools:visibility="visible" />
 
-    <!-- Phone Number Row with 👤+ Action Icon (Replacing Edit option) -->
+    <!-- Phone Number Row with 👤+ Action Icon -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -77,7 +77,7 @@
 
     </RelativeLayout>
 
-    <!-- Row 1: 📞 Call & 💬 Message -->
+    <!-- Row 1: 📞 Call & 💬 Message (BLUE actions) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -91,7 +91,7 @@
             android:layout_weight="1"
             android:background="@drawable/bg_button_outline"
             android:text="📞  Call"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -103,13 +103,13 @@
             android:layout_weight="1"
             android:background="@drawable/bg_button_outline"
             android:text="💬  Message"
-            android:textColor="@color/text_primary"
+            android:textColor="@color/primary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
     </LinearLayout>
 
-    <!-- Remove Guardian Action -->
+    <!-- Remove Guardian Action (RED text for removal) -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnRemove"
         android:layout_width="match_parent"
@@ -117,7 +117,7 @@
         android:layout_marginTop="8dp"
         android:background="?attr/selectableItemBackground"
         android:text="Remove Guardian"
-        android:textColor="@color/status_disabled"
+        android:textColor="@color/emergency_red"
         android:textSize="13sp"
         android:textStyle="bold" />
 
