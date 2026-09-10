@@ -166,4 +166,58 @@ class TriggerManagerTest {
         assertTrue(defaults.contains("This is an emergency"))
         assertTrue(defaults.contains("Send SOS"))
     }
+
+    @Test
+    fun testNormalizeTriggerSourcePowerButton() {
+        assertEquals(
+            TriggerManager.TRIGGER_POWER_BUTTON,
+            TriggerManager.normalizeTriggerSource("power_button")
+        )
+        assertEquals(
+            TriggerManager.TRIGGER_POWER_BUTTON,
+            TriggerManager.normalizeTriggerSource("power_button_assistant")
+        )
+        assertEquals(
+            TriggerManager.TRIGGER_POWER_BUTTON,
+            TriggerManager.normalizeTriggerSource("assistant")
+        )
+        assertEquals(
+            TriggerManager.TRIGGER_POWER_BUTTON,
+            TriggerManager.normalizeTriggerSource("Power Button Trigger")
+        )
+    }
+
+    @Test
+    fun testEmergencyMessagePowerButtonTrigger() {
+        val msg = TriggerManager.buildEmergencyMessage(
+            TriggerManager.TRIGGER_POWER_BUTTON,
+            TriggerManager.LocationStatus.CURRENT,
+            "11.0168,76.9558"
+        )
+        assertTrue(msg.contains("🚨 KAIKO SOS ALERT"))
+        assertTrue(msg.contains("Power Button Trigger"))
+        assertTrue(msg.contains("📍 Current Location:"))
+        assertTrue(msg.contains("https://maps.google.com/?q=11.0168,76.9558"))
+    }
+
+    @Test
+    fun testGuardianConstants() {
+        assertEquals(10, TriggerManager.MAX_GUARDIANS)
+        assertEquals(3, TriggerManager.MIN_GUARDIANS)
+    }
+
+    @Test
+    fun testMaxCustomVoicePhrases() {
+        assertEquals(5, TriggerManager.MAX_CUSTOM_VOICE_PHRASES)
+    }
+
+    @Test
+    fun testCustomPhraseNormalization() {
+        val customPhrase = "Red Alert Emergency"
+        val normalized = VoiceTriggerManager.normalizeText(customPhrase)
+        assertEquals("red alert emergency", normalized)
+        val spoken = "Please activate red alert emergency right now"
+        val normalizedSpoken = VoiceTriggerManager.normalizeText(spoken)
+        assertTrue(normalizedSpoken.contains(normalized))
+    }
 }

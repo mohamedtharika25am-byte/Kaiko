@@ -41,6 +41,9 @@
     <!-- RECORD_AUDIO: Hands-free Voice Trigger safety feature (v1.6.0) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- WAKE_LOCK: Lock-screen display and wake-up for assistant emergency triggers (v1.7.0) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Android 11+ Package Visibility Queries for Speech Recognition -->
     <queries>
         <intent>
@@ -82,6 +85,17 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- Dedicated Voice Trigger screen (v1.8.0) -->
+        <activity
+            android:name=".VoiceTriggerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Dedicated Settings screen (v1.8.0) -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
         <!-- Transparent activity to prompt for Location Services / GPS directly on current screen -->
         <activity
             android:name=".LocationPromptActivity"
@@ -92,6 +106,21 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:launchMode="singleTop" />
+
+        <!-- Dedicated Power Button Long Press SOS Confirmation Screen (v1.7.0) -->
+        <activity
+            android:name=".PowerButtonSosActivity"
+            android:theme="@style/Theme.Transparent"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.ASSIST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <!-- 
             ====================================================================
@@ -169,7 +198,45 @@
 
         <!-- 
             ====================================================================
-            6. INTERNAL BROADCAST RECEIVERS FOR STATE & ESCALATION
+            6. VOICE INTERACTION & DIGITAL ASSISTANT SERVICES (v1.7.0)
+            ====================================================================
+        -->
+        <service
+            android:name=".KaikoVoiceInteractionService"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
+            android:exported="true"
+            android:label="@string/voice_interaction_service_label">
+            <intent-filter>
+                <action android:name="android.service.voice.VoiceInteractionService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.voice_interaction"
+                android:resource="@xml/voice_interaction_service_config" />
+        </service>
+
+        <service
+            android:name=".KaikoVoiceInteractionSessionService"
+            android:permission="android.permission.BIND_VOICE_INTERACTION"
+            android:exported="true" />
+
+        <service
+            android:name=".KaikoRecognitionService"
+            android:permission="android.permission.BIND_RECOGNITION_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.speech.RecognitionService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.speech"
+                android:resource="@xml/recognition_service" />
+        </service>
+
+        <!-- 
+            ====================================================================
+            7. INTERNAL BROADCAST RECEIVERS FOR STATE & ESCALATION
             ====================================================================
         -->
         <receiver

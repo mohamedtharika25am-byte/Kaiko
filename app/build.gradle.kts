@@ -11,8 +11,8 @@ android {
         applicationId = "com.yourname.kaiko"
         minSdk = 26
         targetSdk = 34
-        versionCode = 14
-        versionName = "1.6.0"
+        versionCode = 16
+        versionName = "1.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

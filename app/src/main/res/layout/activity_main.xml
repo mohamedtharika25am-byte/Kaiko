@@ -1,714 +1,594 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/scrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="32dp"
-        tools:context=".MainActivity">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-        <!-- ============================================================= -->
-        <!-- TOP APP HEADER WITH USER GUIDE INFO ICON -->
-        <!-- ============================================================= -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvAppTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:letterSpacing="0.08"
-                    android:text="@string/app_name"
-                    android:textColor="@color/primary"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvAppTagline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/app_tagline"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-            </LinearLayout>
-
-            <!-- ℹ️ Info icon at top-right for User Guide (Blue) -->
-            <ImageButton
-                android:id="@+id/btnUserGuide"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="User Guide"
-                android:padding="8dp"
-                android:src="@android:drawable/ic_dialog_info"
-                app:tint="@color/primary" />
-
-        </RelativeLayout>
-
-        <!-- ============================================================= -->
-        <!-- 1. MAIN SOS TRIGGER BUTTON (Large circular, centered at top) -->
-        <!-- RED: Emergency/SOS elements ONLY -->
-        <!-- ============================================================= -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="16dp"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/btnMainSos"
-                android:layout_width="160dp"
-                android:layout_height="160dp"
-                android:background="@drawable/bg_sos_circle"
-                android:clickable="true"
-                android:elevation="6dp"
-                android:focusable="true"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:letterSpacing="0.06"
-                    android:text="SOS"
-                    android:textColor="#FFFFFF"
-                    android:textSize="40sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:letterSpacing="0.08"
-                    android:text="TAP TO TRIGGER"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- ============================================================= -->
-        <!-- ACTIVE SOS CONTROLS (Appears ONLY after SOS trigger action starts) -->
-        <!-- VERY LIGHT RED CARDS/BOXES: Use ONLY for emergency/SOS sections -->
-        <!-- ============================================================= -->
-        <LinearLayout
-            android:id="@+id/cardActiveSos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/bg_card_emergency"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="24dp"
+            tools:context=".MainActivity">
 
-            <TextView
-                android:id="@+id/tvActiveSosTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/active_sos_title"
-                android:textColor="@color/emergency_red"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvActiveSosStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="14dp"
-                android:text="Status: Waiting for Guardian 1"
-                android:textColor="@color/emergency_red_dark"
-                android:textSize="14sp" />
-
-            <!-- Button 1: 🟢 I'M SAFE (GREEN: Safe/success states ONLY) -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnSafeNow"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_button_safe"
-                android:text="🟢  I'M SAFE"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <!-- Button 2: 🚨 EMERGENCY (RED: Emergency action) -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnEscalateEmergency"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_button_emergency"
-                android:text="🚨  EMERGENCY"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <!-- Button 3: ⚠️ MISTOUCHED (Warning/Amber) -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnMistouched"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_button_warning"
-                android:text="⚠️  MISTOUCHED"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <!-- Button 4: 🧪 TEST (GREY: Neutral/secondary actions) -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnTestOnly"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_button_test"
-                android:text="🧪  TEST"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="10dp"
-            android:background="@color/divider_color" />
-
-        <!-- ============================================================= -->
-        <!-- 2. SYSTEM STATUS (Location, Accessibility, Guardians, Voice) -->
-        <!-- LIGHT BLUE CARDS/BOXES: Used for normal settings & safety features -->
-        <!-- ============================================================= -->
-        <LinearLayout
-            android:id="@+id/cardSystemStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card_light_blue"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="SYSTEM STATUS"
-                android:textColor="@color/primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <!-- Item 1: 📍 Location Permission -->
-            <LinearLayout
-                android:id="@+id/itemLocationPermission"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_status_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍"
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Location Permission"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Tap to manage permission"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvLocationPermissionValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="OFF"
-                    android:textColor="@color/status_disabled"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Item 2: 📡 Location Toggle -->
-            <LinearLayout
-                android:id="@+id/itemLocationToggle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_status_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📡"
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Location Toggle"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Tap to manage Android Location Services / GPS"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvLocationToggleValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="OFF"
-                    android:textColor="@color/status_disabled"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Item 3: ♿ Accessibility -->
-            <LinearLayout
-                android:id="@+id/itemAccessibilityStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_status_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="♿"
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Accessibility"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Tap to manage accessibility"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvAccessibilityStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="OFF"
-                    android:textColor="@color/status_disabled"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Item 4: 👥 Guardians -->
-            <LinearLayout
-                android:id="@+id/itemGuardiansStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_status_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="👥"
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Guardians"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Tap to manage guardians"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvGuardiansStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="0 guardians configured"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Item 5: 🎤 Voice Trigger -->
-            <LinearLayout
-                android:id="@+id/itemVoiceTriggerStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/bg_status_item"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="horizontal"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🎤"
-                    android:textSize="20sp" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Voice Trigger"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Hands-free emergency voice detection"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvVoiceTriggerStatusValue"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:text="OFF"
-                    android:textColor="@color/status_disabled"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="@color/divider_color" />
-
-        <!-- ============================================================= -->
-        <!-- 3. VOICE TRIGGER FEATURE CARD (v1.6.0) -->
-        <!-- LIGHT BLUE CARDS/BOXES: Used for normal settings & safety features -->
-        <!-- ============================================================= -->
-        <LinearLayout
-            android:id="@+id/cardVoiceTrigger"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card_light_blue"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <!-- Title & ON/OFF Switch Row -->
+            <!-- ============================================================= -->
+            <!-- TOP APP HEADER WITH USER GUIDE INFO ICON -->
+            <!-- ============================================================= -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentStart="true"
                     android:layout_centerVertical="true"
-                    android:layout_marginEnd="12dp"
-                    android:layout_toStartOf="@+id/switchVoiceTrigger"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvAppTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.08"
+                        android:text="@string/app_name"
+                        android:textColor="@color/primary"
+                        android:textSize="26sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvAppTagline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_tagline"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- ℹ️ Info icon at top-right for User Guide (Blue) -->
+                <ImageButton
+                    android:id="@+id/btnUserGuide"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="User Guide"
+                    android:padding="8dp"
+                    android:src="@android:drawable/ic_dialog_info"
+                    app:tint="@color/primary" />
+
+            </RelativeLayout>
+
+            <!-- ============================================================= -->
+            <!-- 1. MAIN SOS TRIGGER BUTTON (Large circular, centered at top) -->
+            <!-- RED: Emergency/SOS elements ONLY -->
+            <!-- ============================================================= -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="20dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/btnMainSos"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:background="@drawable/bg_sos_circle"
+                    android:clickable="true"
+                    android:elevation="6dp"
+                    android:focusable="true"
+                    android:gravity="center"
                     android:orientation="vertical">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:letterSpacing="0.08"
-                        android:text="@string/voice_trigger_title"
-                        android:textColor="@color/primary"
-                        android:textSize="14sp"
+                        android:letterSpacing="0.06"
+                        android:text="SOS"
+                        android:textColor="#FFFFFF"
+                        android:textSize="40sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/voice_trigger_desc"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switchVoiceTrigger"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true" />
-
-            </RelativeLayout>
-
-            <!-- Live Status Indicator -->
-            <TextView
-                android:id="@+id/tvVoiceTriggerLiveStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Voice Trigger is OFF"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <!-- Default Emergency Phrases Box -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/voice_trigger_default_header"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="• &quot;I need help&quot;\n• &quot;I am in danger&quot;\n• &quot;Help me&quot;\n• &quot;This is an emergency&quot;\n• &quot;Send SOS&quot;"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-            <!-- Custom Voice Phrase Section -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:padding="14dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/voice_trigger_custom_header"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <!-- Case 1: No Custom Phrase Configured -->
-                <LinearLayout
-                    android:id="@+id/layoutCustomPhraseEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/voice_trigger_no_custom"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
-                    <androidx.appcompat.widget.AppCompatButton
-                        android:id="@+id/btnAddCustomPhrase"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_button_secondary"
-                        android:text="@string/voice_trigger_add_custom"
-                        android:textColor="@color/on_secondary"
-                        android:textSize="13sp"
+                        android:letterSpacing="0.08"
+                        android:text="TAP TO TRIGGER"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
 
                 </LinearLayout>
 
-                <!-- Case 2: Custom Phrase Configured -->
-                <LinearLayout
-                    android:id="@+id/layoutCustomPhraseConfigured"
+            </LinearLayout>
+
+            <!-- ============================================================= -->
+            <!-- ACTIVE SOS CONTROLS (Appears ONLY after SOS trigger action starts) -->
+            <!-- VERY LIGHT RED CARDS/BOXES: Use ONLY for emergency/SOS sections -->
+            <!-- ============================================================= -->
+            <LinearLayout
+                android:id="@+id/cardActiveSos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_card_emergency"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tvActiveSosTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:text="@string/active_sos_title"
+                    android:textColor="@color/emergency_red"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvActiveSosStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="14dp"
+                    android:text="Status: Waiting for Guardian 1"
+                    android:textColor="@color/emergency_red_dark"
+                    android:textSize="14sp" />
+
+                <!-- Button 1: 🟢 I'M SAFE -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnSafeNow"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_button_safe"
+                    android:text="🟢  I'M SAFE"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Button 2: 🚨 EMERGENCY -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnEscalateEmergency"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_button_emergency"
+                    android:text="🚨  EMERGENCY"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Button 3: ⚠️ MISTOUCHED -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnMistouched"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_button_warning"
+                    android:text="⚠️  MISTOUCHED"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- Button 4: 🧪 TEST -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnTestOnly"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_button_test"
+                    android:text="🧪  TEST"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="10dp"
+                android:background="@color/divider_color" />
+
+            <!-- ============================================================= -->
+            <!-- 2. SYSTEM STATUS (Expandable / Collapsible Section) -->
+            <!-- LIGHT BLUE CARDS/BOXES: Used for normal settings & safety features -->
+            <!-- ============================================================= -->
+            <LinearLayout
+                android:id="@+id/cardSystemStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Expandable Header Row -->
+                <RelativeLayout
+                    android:id="@+id/headerSystemStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:id="@+id/tvSystemStatusHeader"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:letterSpacing="0.08"
+                        android:text="SYSTEM STATUS"
+                        android:textColor="@color/primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivSystemStatusExpand"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:contentDescription="Expand or collapse system status"
+                        android:src="@drawable/ic_expand_more"
+                        app:tint="@color/primary" />
+
+                </RelativeLayout>
+
+                <!-- Collapsible Items Container -->
+                <LinearLayout
+                    android:id="@+id/containerSystemStatusItems"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:orientation="vertical"
                     android:visibility="gone"
                     tools:visibility="visible">
 
-                    <RelativeLayout
+                    <!-- Item 1: 📍 Location Permission -->
+                    <LinearLayout
+                        android:id="@+id/itemLocationPermission"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical">
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
 
                         <TextView
-                            android:id="@+id/tvCustomPhraseDisplay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_alignParentStart="true"
-                            android:layout_centerVertical="true"
-                            android:layout_marginEnd="8dp"
-                            android:layout_toStartOf="@+id/switchCustomPhrase"
-                            android:textColor="@color/primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold"
-                            tools:text="🗣️ &quot;I need immediate help&quot;" />
+                            android:text="📍"
+                            android:textSize="20sp" />
 
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switchCustomPhrase"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:layout_centerVertical="true" />
-
-                    </RelativeLayout>
-
-                    <!-- Edit and Remove buttons -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:orientation="horizontal">
-
-                        <androidx.appcompat.widget.AppCompatButton
-                            android:id="@+id/btnEditCustomPhrase"
+                        <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="38dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_button_outline"
-                            android:text="EDIT"
-                            android:textColor="@color/primary"
-                            android:textSize="12sp"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Location Permission"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Tap to manage permission"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvLocationPermissionValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="OFF"
+                            android:textColor="@color/status_disabled"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
-                        <androidx.appcompat.widget.AppCompatButton
-                            android:id="@+id/btnRemoveCustomPhrase"
+                    </LinearLayout>
+
+                    <!-- Item 2: 📡 Location Toggle -->
+                    <LinearLayout
+                        android:id="@+id/itemLocationToggle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📡"
+                            android:textSize="20sp" />
+
+                        <LinearLayout
                             android:layout_width="0dp"
-                            android:layout_height="38dp"
-                            android:layout_marginStart="10dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_button_outline"
-                            android:text="REMOVE"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Location Toggle"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Tap to manage Android Location Services / GPS"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvLocationToggleValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="OFF"
+                            android:textColor="@color/status_disabled"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Item 3: ♿ Accessibility -->
+                    <LinearLayout
+                        android:id="@+id/itemAccessibilityStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="♿"
+                            android:textSize="20sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Accessibility Service"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Required for 3x Volume-Down trigger"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvAccessibilityStatusValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="OFF"
+                            android:textColor="@color/status_disabled"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Item 4: 👥 Guardians -->
+                    <LinearLayout
+                        android:id="@+id/itemGuardiansStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="👥"
+                            android:textSize="20sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Guardians"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvGuardiansConfiguredCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="0 / 3 configured (3 required)"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvGuardiansStatusValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="INCOMPLETE"
                             android:textColor="@color/emergency_red"
-                            android:textSize="12sp"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Item 5: 🎙️ Voice Trigger -->
+                    <LinearLayout
+                        android:id="@+id/itemVoiceTriggerStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎙️"
+                            android:textSize="20sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Voice Trigger"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Hands-free emergency phrases"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvVoiceTriggerStatusValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="OFF"
+                            android:textColor="@color/status_disabled"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Item 6: ⚡ Power Button Assistant -->
+                    <LinearLayout
+                        android:id="@+id/itemPowerButtonStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_status_item"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="horizontal"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚡"
+                            android:textSize="20sp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Power Button SOS"
+                                android:textColor="@color/text_primary"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Default Assistant long-press trigger"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvPowerButtonStatusValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="OFF"
+                            android:textColor="@color/status_disabled"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                     </LinearLayout>
@@ -717,93 +597,24 @@
 
             </LinearLayout>
 
-            <!-- Android OS limitation explanation -->
-            <TextView
-                android:id="@+id/tvVoiceLimitation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/voice_trigger_limitation_note"
-                android:textColor="@color/text_secondary"
-                android:textSize="11sp" />
-
         </LinearLayout>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="12dp"
-            android:background="@color/divider_color" />
+    </ScrollView>
 
-        <!-- ============================================================= -->
-        <!-- 4. ACCESSIBILITY SETUP -->
-        <!-- LIGHT BLUE CARDS/BOXES: Normal settings & safety features -->
-        <!-- ============================================================= -->
-        <LinearLayout
-            android:id="@+id/cardAccessibilitySetup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card_light_blue"
-            android:orientation="vertical"
-            android:padding="16dp">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider_color" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:letterSpacing="0.08"
-                android:text="ACCESSIBILITY SETUP"
-                android:textColor="@color/primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+    <!-- Persistent Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/background"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu" />
 
-            <TextView
-                android:id="@+id/tvAccessibilityPath"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:lineSpacingExtra="4dp"
-                android:text="Settings → Accessibility → Downloaded Apps\n→ Kaiko Emergency Trigger Listener → ON"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <!-- BLUE: Regular actions/buttons -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnOpenAccessibility"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_button_secondary"
-                android:text="MANAGE ACCESSIBILITY"
-                android:textColor="@color/on_secondary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="Press Volume Down 3× quickly to trigger SOS."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-        </LinearLayout>
-
-        <!-- ============================================================= -->
-        <!-- MANAGE GUARDIANS BUTTON (BLUE: Regular actions/buttons) -->
-        <!-- ============================================================= -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnManageGuardiansHome"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_button_primary"
-            android:text="👥  MANAGE GUARDIANS"
-            android:textColor="@color/on_primary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-    </LinearLayout>
-
-</ScrollView>
+</LinearLayout>

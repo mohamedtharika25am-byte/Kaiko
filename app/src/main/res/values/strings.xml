@@ -76,5 +76,14 @@
     <string name="voice_trigger_custom_dialog_title">Custom Voice Phrase</string>
     <string name="voice_trigger_custom_dialog_desc">Enter a phrase using text input. When spoken aloud, Kaiko will immediately trigger the emergency SOS flow.</string>
     <string name="voice_trigger_custom_hint">e.g. I need immediate help</string>
-    <string name="voice_trigger_limitation_note">Note: Due to Android OS microphone privacy policies, continuous background voice recognition is restricted when the app is closed. Voice Trigger listens actively while Kaiko is open on screen.</string>
+    <string name="voice_trigger_limitation_note">Note: Voice recognition uses Android\'s Voice Interaction Service to listen for emergency phrases when the phone is sleeping / screen is off where Android officially permits it.</string>
+
+    <!-- Power Button SOS v1.7.0 Strings -->
+    <string name="voice_interaction_service_label">Kaiko Safety Assistant</string>
+    <string name="power_button_sos_title">POWER BUTTON SOS</string>
+    <string name="power_button_sos_desc">Trigger emergency SOS confirmation by long-pressing your device\'s Power Button</string>
+    <string name="power_button_btn_configure">CONFIGURE POWER BUTTON / ASSISTANT</string>
+    <string name="power_button_status_active">● Active: Long-press Power Button for SOS confirmation</string>
+    <string name="power_button_status_inactive">● Inactive: Tap below to set Kaiko as Default Assistant</string>
+    <string name="power_button_sos_note">When Kaiko is selected as Default Assistant, long-pressing the Power Button shows the SOS confirmation screen with [ACCEPT &amp; SEND SOS] and [CANCEL].</string>
 </resources>

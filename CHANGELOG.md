@@ -2,6 +2,82 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.8.0] — 2026-09-10 16:30 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.8.0/Kaiko-v1.8.0.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 16  
+
+### Separate Pages, Bottom Navigation, Custom Phrases & Professional UI
+- **Dedicated Voice Trigger Page (`VoiceTriggerActivity`)**:
+  - Moved detailed Voice Trigger configuration from Home into its own dedicated page.
+  - Kept Voice Trigger ON/OFF control with real-time status indication and microphone permission handling.
+  - Preserved all 5 built-in emergency phrases ("I need help", "I am in danger", "Help me", "This is an emergency", "Send SOS").
+  - Added support for up to 5 text-input based CUSTOM emergency phrases.
+  - User can add, edit, and remove custom emergency phrases dynamically.
+  - Real-time custom phrase counter (0/5, 1/5 ... 5/5) preventing more than 5 custom phrases.
+  - Strict validation preventing blank and duplicate phrases (case-insensitive check against custom & default phrases).
+  - Stored locally via existing `SharedPreferences` architecture (`kaiko_preferences`).
+  - Custom and default phrases route directly to the existing central SOS flow (`TriggerManager.fireAlert(context, TRIGGER_VOICE)`).
+  - Unwanted recognition feedback addressed using Android-supported `SpeechRecognizer` lifecycle reuse, on-device recognition where supported (API 33+), dictation mode hints, extended silence windows, and eliminating aggressive teardown/re-creation loops without altering system audio streams.
+- **Compact Home Page with Expandable System Status**:
+  - Kept main SOS button centered, prominent, and uncluttered.
+  - Compact Home removing detailed Voice Trigger and Guardian lists.
+  - Expandable/collapsible System Status section (Google-style question/details UI):
+    - Collapsed state displays only the "SYSTEM STATUS" heading and expand chevron (`ic_expand_more`).
+    - Expanded state displays existing status items (Location Permission, Location Toggle, Accessibility Service, Guardians Configured, Voice Trigger, Power Button SOS).
+    - Preserved all existing live indicators and tap actions.
+- **Persistent Bottom Navigation Bar**:
+  - Added persistent bottom navigation across 4 primary sections:
+    - 🛡️ **Emergency** (`MainActivity`)
+    - 🎙️ **Voice** (`VoiceTriggerActivity`)
+    - 👥 **Guardians** (`ManageGuardiansActivity`)
+    - ⚙️ **Settings** (`SettingsActivity`)
+  - Clean Material vector icons (`ic_nav_emergency`, `ic_nav_voice`, `ic_nav_guardians`, `ic_nav_settings`), no emojis.
+  - Highlighted active page with seamless transitions.
+- **Dedicated Settings Page (`SettingsActivity`)**:
+  - Power Button SOS configuration with "MANAGE DEFAULT ASSISTANT" button.
+  - Accessibility Setup card with step-by-step instructions.
+  - User Guide access link.
+  - Version info and status display.
+- **Guardians Capacity Expansion (Up to 10)**:
+  - Increased maximum guardians from 3 to 10.
+  - Minimum 3 guardians remains compulsory.
+  - Prevented adding an 11th guardian (action disabled at 10/10 capacity).
+  - Responsive setup-complete banner layout preventing text truncation across screen sizes:
+    `X emergency guardians configured.`
+    `Setup completed`
+- **Consistent Edit / Remove Icon Styling (4th Professional Style)**:
+  - Unified icon style applied consistently across Guardian management and Custom Voice Phrases:
+    - **Edit**: Small neutral grey pencil icon (`ic_edit`).
+    - **Remove**: Small red delete/trash icon (`ic_delete`).
+    - Standardized 36×36dp touch target with 20dp vector icon and consistent spacing everywhere.
+    - Eliminated large "Remove Guardian" text buttons and emoji action icons.
+- **Power Button SOS Confirmation Dialog**:
+  - Compact, properly sized confirmation dialog card.
+  - Clear header: "Send Emergency SOS?"
+  - Subtitle: "Power button long press detected."
+  - Compact horizontal action buttons: `CANCEL` | `SEND SOS`.
+  - "MANAGE DEFAULT ASSISTANT" directly opens the actual Android system Default Assistant settings (`Settings.ACTION_VOICE_INPUT_SETTINGS` with supported fallbacks).
+- **UI Consistency & Architecture Preservation**:
+  - Preserved existing clean White/Light design system and color palette.
+  - Zero modifications to core SOS pipeline or escalation timing.
+  - Maintained all prior release APKs.
+
+---
+
+## [v1.7.0] — 2026-09-09 18:30 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.7.0/Kaiko-v1.7.0.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 15  
+
+### Power Button Long Press SOS & Digital Assistant Integration
+- **Power Button Trigger Integration**:
+  - Registered Kaiko as an Android Digital Assistant service (`KaikoVoiceInteractionService`).
+  - Added standalone lock-screen-capable `PowerButtonSosActivity`.
+  - Added Power Button SOS status item in System Status.
+
+---
+
 ## [v1.6.0] — 2026-09-08 19:15 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.6.0/Kaiko-v1.6.0.apk` (5.25 MB)  

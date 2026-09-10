@@ -101,7 +101,36 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:lineSpacingExtra="4dp"
-                    android:text="• App SOS Button: Tap the large circular SOS button on the home screen.\n• Volume Down 3× Press: Press the hardware Volume Down button 3 times quickly.\n• Normal Widget: Tap the home screen SOS widget for instant alert dispatch.\n• Discreet Safety Trigger: Silently sends emergency alert without opening app or UI.\n• Voice Trigger: Speak an emergency phrase aloud without needing any wake word."
+                    android:text="• App SOS Button: Tap the large circular SOS button on the home screen.\n• Volume Down 3× Press: Press the hardware Volume Down button 3 times quickly.\n• Power Button Long Press: Long-press Power Button (with Kaiko as Default Assistant) for SOS confirmation.\n• Normal Widget: Tap the home screen SOS widget for instant alert dispatch.\n• Discreet Safety Trigger: Silently sends emergency alert without opening app or UI.\n• Voice Trigger: Speak an emergency phrase aloud without needing any wake word."
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- POWER BUTTON SOS (LIGHT BLUE CARD) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_card_light_blue"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.08"
+                    android:text="POWER BUTTON SOS"
+                    android:textColor="@color/primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="• Default Assistant Integration: Set Kaiko as your device's Default Digital Assistant in system settings.\n• Long-Press Power Button: Invokes Kaiko's Emergency SOS confirmation screen.\n• Accidental Protection: Shows [ACCEPT &amp; SEND SOS] and [CANCEL] buttons so emergency alerts are not sent accidentally.\n• Instant Dispatch: Tapping ACCEPT immediately starts the central SOS flow and alerts your guardians."
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
@@ -130,7 +159,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:lineSpacingExtra="4dp"
-                    android:text="• Hands-Free Detection: Voice Trigger continuously listens for emergency phrases while enabled.\n• No Wake Word: You do NOT need to say &quot;Hey Kaiko&quot; or any prefix.\n• Default Emergency Phrases:\n   - &quot;I need help&quot;\n   - &quot;I am in danger&quot;\n   - &quot;Help me&quot;\n   - &quot;This is an emergency&quot;\n   - &quot;Send SOS&quot;\n• Custom Phrase: Add your own personal emergency phrase via text input (e.g. &quot;I need immediate help&quot;).\n• Android OS Limitation: Continuous microphone listening is active while Kaiko is open on screen. Android OS microphone privacy policies restrict continuous background listening when the app is closed."
+                    android:text="• Hands-Free Detection: Voice Trigger listens for emergency phrases while enabled.\n• No Wake Word: You do NOT need to say &quot;Hey Kaiko&quot; or any prefix.\n• Default Emergency Phrases:\n   - &quot;I need help&quot;\n   - &quot;I am in danger&quot;\n   - &quot;Help me&quot;\n   - &quot;This is an emergency&quot;\n   - &quot;Send SOS&quot;\n• Custom Phrase: Add your own personal emergency phrase via text input (e.g. &quot;I need immediate help&quot;).\n• Sleep / Screen-Off Mode: Voice recognition uses Android\'s Voice Interaction Service to listen for emergency phrases when the phone is sleeping / screen is off where Android officially permits it."
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 

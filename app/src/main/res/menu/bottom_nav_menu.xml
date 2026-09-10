@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_emergency"
+        android:icon="@drawable/ic_nav_emergency"
+        android:title="Emergency" />
+    <item
+        android:id="@+id/nav_voice"
+        android:icon="@drawable/ic_nav_voice"
+        android:title="Voice" />
+    <item
+        android:id="@+id/nav_guardians"
+        android:icon="@drawable/ic_nav_guardians"
+        android:title="Guardians" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_nav_settings"
+        android:title="Settings" />
+</menu>

@@ -24,32 +24,22 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.yourname.kaiko.databinding.ActivityMainBinding
-import com.yourname.kaiko.databinding.DialogCustomVoicePhraseBinding
 
 /**
- * Main Activity for Kaiko (v1.6.0).
+ * Main Activity (Home / Emergency Page) for Kaiko (v1.8.0).
+ * 
  * Features:
- * 1. Top large circular SOS trigger button (RED).
- * 2. Active SOS controls with 4 dedicated actions:
- *    - 🟢 I'M SAFE (Green)
- *    - 🚨 EMERGENCY (Red)
- *    - ⚠️ MISTOUCHED (Amber/Warning)
- *    - 🧪 TEST (Grey, stop escalation test only, no SMS)
- * 3. Compact System Status (Location, GPS, Accessibility, Guardians, Voice Trigger).
- * 4. Voice Trigger safety feature:
- *    - ON/OFF control
- *    - Default emergency phrases ("I need help", "I am in danger", "Help me", "This is an emergency", "Send SOS")
- *    - Custom voice phrase (entered via text input, stored locally, enabled/disabled/removed)
- *    - Triggers existing central SOS flow without modifying SOS/SMS logic
- *    - Respects Android speech recognition APIs and reports background limitations
- * 5. First-time accessibility onboarding.
- * 6. Direct Android Accessibility settings management.
- * 7. Top-right Info icon launching dedicated Kaiko User Guide.
+ * 1. Prominent centered circular SOS button.
+ * 2. Active SOS banner and controls (🟢 I'M SAFE, 🚨 EMERGENCY, ⚠️ MISTOUCHED, 🧪 TEST).
+ * 3. Compact Home layout with Expandable/Collapsible System Status section.
+ * 4. Preserves all status indicators and tap actions (Location, GPS, Accessibility, Guardians, Voice, Power Button).
+ * 5. Persistent bottom navigation bar across Emergency, Voice, Guardians, and Settings.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var sharedPreferences: SharedPreferences
+    private var isSystemStatusExpanded = false
 
     // Receiver to update UI live when SOS state changes or location setup is requested
     private val stateChangeReceiver = object : BroadcastReceiver() {
@@ -58,7 +48,6 @@ class MainActivity : AppCompatActivity() {
                 TriggerManager.ACTION_STATE_CHANGED -> {
                     updateActiveSosBanner()
                     updateSystemStatus()
-                    updateVoiceTriggerUi()
                 }
                 TriggerManager.ACTION_REQUEST_LOCATION_PERMISSION -> requestAppPermissions()
                 TriggerManager.ACTION_REQUEST_LOCATION_SETTINGS -> promptLocationServices()
@@ -86,52 +75,6 @@ class MainActivity : AppCompatActivity() {
         updateSystemStatus()
     }
 
-    // Microphone permission request launcher for Voice Trigger
-    private val requestAudioPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            Toast.makeText(this, "Microphone permission granted for Voice Trigger", Toast.LENGTH_SHORT).show()
-            TriggerManager.setVoiceTriggerEnabled(this, true)
-            binding.switchVoiceTrigger.isChecked = true
-            startVoiceListening()
-        } else {
-            Toast.makeText(
-                this,
-                "Microphone permission is required to use Voice Trigger.",
-                Toast.LENGTH_LONG
-            ).show()
-            TriggerManager.setVoiceTriggerEnabled(this, false)
-            binding.switchVoiceTrigger.isChecked = false
-            binding.tvVoiceTriggerLiveStatus.text = "Permission denied: Voice Trigger is OFF"
-            binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-        }
-        updateSystemStatus()
-        updateVoiceTriggerUi()
-    }
-
-    // Voice Trigger Listener Callback
-    private val voiceTriggerListener = object : VoiceTriggerManager.VoiceTriggerListener {
-        override fun onStateChanged(isListening: Boolean, statusMessage: String) {
-            runOnUiThread {
-                binding.tvVoiceTriggerLiveStatus.text = statusMessage
-                if (isListening) {
-                    binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.status_enabled))
-                } else {
-                    binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_secondary))
-                }
-            }
-        }
-
-        override fun onPhraseDetected(phrase: String) {
-            runOnUiThread {
-                Toast.makeText(this@MainActivity, "Voice Trigger: \"$phrase\" detected! SOS triggered.", Toast.LENGTH_LONG).show()
-                updateActiveSosBanner()
-                updateSystemStatus()
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -139,10 +82,11 @@ class MainActivity : AppCompatActivity() {
 
         sharedPreferences = getSharedPreferences(TriggerManager.PREFS_NAME, Context.MODE_PRIVATE)
 
+        setupBottomNavigation()
+        setupExpandableSystemStatus()
         setupListeners()
         updateActiveSosBanner()
         updateSystemStatus()
-        updateVoiceTriggerUi()
         checkAccessibilityOnboarding()
         handleIncomingAction(intent)
     }
@@ -162,18 +106,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        binding.bottomNavigationView.selectedItemId = R.id.nav_emergency
         updateSystemStatus()
         updateActiveSosBanner()
-        updateVoiceTriggerUi()
 
-        // If Voice Trigger is enabled and permission is granted, start in-app listening
-        if (TriggerManager.isVoiceTriggerEnabled(this)) {
-            if (VoiceTriggerManager.hasRecordAudioPermission(this)) {
-                startVoiceListening()
-            } else {
-                binding.tvVoiceTriggerLiveStatus.text = "Microphone permission required"
-                binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-            }
+        // If Voice Trigger is enabled and permission is granted, start continuous recognition
+        if (TriggerManager.isVoiceTriggerEnabled(this) && VoiceTriggerManager.hasRecordAudioPermission(this)) {
+            VoiceTriggerManager.startListening(this)
         }
 
         // Register state change receiver and location setup actions
@@ -191,13 +130,64 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        // Respect Android microphone privacy by pausing recognizer while activity is paused
-        VoiceTriggerManager.stopListening()
-
         try {
             unregisterReceiver(stateChangeReceiver)
         } catch (e: Exception) {
             // Ignored if not registered
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        binding.bottomNavigationView.selectedItemId = R.id.nav_emergency
+        binding.bottomNavigationView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_emergency -> true
+                R.id.nav_voice -> {
+                    val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                R.id.nav_guardians -> {
+                    val intent = Intent(this, ManageGuardiansActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                R.id.nav_settings -> {
+                    val intent = Intent(this, SettingsActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * Requirement 2: Collapsible / Expandable System Status UI.
+     * Collapsed state shows only the heading and expand arrow.
+     * Expanded state shows the existing status items.
+     */
+    private fun setupExpandableSystemStatus() {
+        binding.containerSystemStatusItems.visibility = if (isSystemStatusExpanded) View.VISIBLE else View.GONE
+        binding.ivSystemStatusExpand.setImageResource(
+            if (isSystemStatusExpanded) R.drawable.ic_expand_less else R.drawable.ic_expand_more
+        )
+
+        binding.headerSystemStatus.setOnClickListener {
+            isSystemStatusExpanded = !isSystemStatusExpanded
+            binding.containerSystemStatusItems.visibility = if (isSystemStatusExpanded) View.VISIBLE else View.GONE
+            binding.ivSystemStatusExpand.setImageResource(
+                if (isSystemStatusExpanded) R.drawable.ic_expand_less else R.drawable.ic_expand_more
+            )
         }
     }
 
@@ -236,19 +226,31 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
-        // 6. System Status: Guardians item -> Open Manage Guardians screen
+        // 6. System Status: Guardians item -> Open Manage Guardians tab/screen
         binding.itemGuardiansStatus.setOnClickListener {
-            startActivity(Intent(this, ManageGuardiansActivity::class.java))
+            val intent = Intent(this, ManageGuardiansActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            }
+            startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
-        // 7. System Status: Voice Trigger item -> Scroll to Voice Trigger card
+        // 7. System Status: Voice Trigger item -> Open Voice Trigger tab/screen
         binding.itemVoiceTriggerStatus.setOnClickListener {
-            binding.scrollView.smoothScrollTo(0, binding.cardVoiceTrigger.top)
+            val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            }
+            startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
-        // 8. Accessibility Management Button
-        binding.btnOpenAccessibility.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        // 8. System Status: Power Button SOS item -> Open Settings tab/screen
+        binding.itemPowerButtonStatus.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            }
+            startActivity(intent)
+            overridePendingTransition(0, 0)
         }
 
         // 9. Active SOS Button 1: 🟢 I'M SAFE
@@ -288,149 +290,6 @@ class MainActivity : AppCompatActivity() {
             updateActiveSosBanner()
             Toast.makeText(this, "Test stopped. No SMS sent.", Toast.LENGTH_SHORT).show()
         }
-
-        // 13. Home Button: 👥 MANAGE GUARDIANS (v1.5.1)
-        binding.btnManageGuardiansHome.setOnClickListener {
-            startActivity(Intent(this, ManageGuardiansActivity::class.java))
-        }
-
-        // 14. Voice Trigger ON/OFF Switch
-        binding.switchVoiceTrigger.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                if (!VoiceTriggerManager.hasRecordAudioPermission(this)) {
-                    requestAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                } else if (!VoiceTriggerManager.isSpeechRecognitionAvailable(this)) {
-                    Toast.makeText(
-                        this,
-                        "Speech recognition is not available on this device.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    binding.switchVoiceTrigger.isChecked = false
-                    TriggerManager.setVoiceTriggerEnabled(this, false)
-                } else {
-                    TriggerManager.setVoiceTriggerEnabled(this, true)
-                    startVoiceListening()
-                }
-            } else {
-                TriggerManager.setVoiceTriggerEnabled(this, false)
-                VoiceTriggerManager.stopListening()
-                binding.tvVoiceTriggerLiveStatus.text = "Voice Trigger is OFF"
-                binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-            }
-            updateSystemStatus()
-        }
-
-        // 15. Custom Phrase: Add Button
-        binding.btnAddCustomPhrase.setOnClickListener {
-            showCustomPhraseDialog()
-        }
-
-        // 16. Custom Phrase: Edit Button
-        binding.btnEditCustomPhrase.setOnClickListener {
-            showCustomPhraseDialog(TriggerManager.getCustomVoicePhrase(this))
-        }
-
-        // 17. Custom Phrase: Switch (Enable / Disable)
-        binding.switchCustomPhrase.setOnCheckedChangeListener { _, isChecked ->
-            TriggerManager.setCustomVoicePhraseEnabled(this, isChecked)
-            val msg = if (isChecked) "Custom phrase enabled" else "Custom phrase disabled"
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        }
-
-        // 18. Custom Phrase: Remove Button
-        binding.btnRemoveCustomPhrase.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("Remove Custom Phrase?")
-                .setMessage("Are you sure you want to remove the custom voice phrase?")
-                .setPositiveButton("REMOVE") { _, _ ->
-                    TriggerManager.removeCustomVoicePhrase(this)
-                    updateVoiceTriggerUi()
-                    Toast.makeText(this, "Custom phrase removed.", Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("CANCEL", null)
-                .show()
-        }
-    }
-
-    private fun startVoiceListening() {
-        if (!TriggerManager.isVoiceTriggerEnabled(this)) return
-        VoiceTriggerManager.startListening(this, voiceTriggerListener)
-    }
-
-    /**
-     * Dialog to add or edit custom emergency voice phrase using TEXT INPUT.
-     */
-    private fun showCustomPhraseDialog(existingPhrase: String = "") {
-        val dialogBinding = DialogCustomVoicePhraseBinding.inflate(layoutInflater)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogBinding.root)
-            .create()
-
-        if (existingPhrase.isNotBlank()) {
-            dialogBinding.etCustomPhraseInput.setText(existingPhrase)
-            dialogBinding.etCustomPhraseInput.setSelection(existingPhrase.length)
-        }
-
-        dialogBinding.btnCancelCustomPhrase.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialogBinding.btnSaveCustomPhrase.setOnClickListener {
-            val inputPhrase = dialogBinding.etCustomPhraseInput.text.toString().trim()
-            if (inputPhrase.isBlank()) {
-                Toast.makeText(this, "Please enter an emergency phrase", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            if (inputPhrase.length < 3) {
-                Toast.makeText(this, "Phrase is too short. Please use at least 2 words.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            TriggerManager.setCustomVoicePhrase(this, inputPhrase)
-            dialog.dismiss()
-            updateVoiceTriggerUi()
-            Toast.makeText(this, "Custom emergency phrase saved!", Toast.LENGTH_SHORT).show()
-        }
-
-        dialog.show()
-    }
-
-    /**
-     * Updates Voice Trigger UI elements to reflect stored preferences.
-     */
-    private fun updateVoiceTriggerUi() {
-        val voiceEnabled = TriggerManager.isVoiceTriggerEnabled(this)
-        if (binding.switchVoiceTrigger.isChecked != voiceEnabled) {
-            binding.switchVoiceTrigger.isChecked = voiceEnabled
-        }
-
-        if (voiceEnabled) {
-            if (VoiceTriggerManager.isCurrentlyListening()) {
-                binding.tvVoiceTriggerLiveStatus.text = "🎤 Active: Listening for emergency phrases..."
-                binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
-            } else {
-                binding.tvVoiceTriggerLiveStatus.text = "Voice Trigger is ON"
-                binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
-            }
-        } else {
-            binding.tvVoiceTriggerLiveStatus.text = "Voice Trigger is OFF"
-            binding.tvVoiceTriggerLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
-        }
-
-        val customPhrase = TriggerManager.getCustomVoicePhrase(this)
-        val customEnabled = TriggerManager.isCustomVoicePhraseEnabled(this)
-
-        if (customPhrase.isNotBlank()) {
-            binding.layoutCustomPhraseEmpty.visibility = View.GONE
-            binding.layoutCustomPhraseConfigured.visibility = View.VISIBLE
-            binding.tvCustomPhraseDisplay.text = "🗣️ \"$customPhrase\""
-            if (binding.switchCustomPhrase.isChecked != customEnabled) {
-                binding.switchCustomPhrase.isChecked = customEnabled
-            }
-        } else {
-            binding.layoutCustomPhraseEmpty.visibility = View.VISIBLE
-            binding.layoutCustomPhraseConfigured.visibility = View.GONE
-        }
     }
 
     /**
@@ -439,7 +298,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun checkAccessibilityOnboarding() {
         val hasShown = sharedPreferences.getBoolean("KEY_ACCESSIBILITY_ONBOARDING_SHOWN", false)
-        val isEnabled = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
+        val isEnabled = KaikoAccessibilityService.isAccessibilityServiceEnabled(this)
         if (!hasShown && !isEnabled) {
             sharedPreferences.edit().putBoolean("KEY_ACCESSIBILITY_ONBOARDING_SHOWN", true).apply()
             AlertDialog.Builder(this)
@@ -462,8 +321,9 @@ class MainActivity : AppCompatActivity() {
      * 1. Location Permission: ON / OFF
      * 2. Location Toggle: ON / OFF
      * 3. Accessibility: ON / OFF
-     * 4. Guardians: X guardians configured
+     * 4. Guardians: X / 3 configured
      * 5. Voice Trigger: ON / OFF
+     * 6. Power Button Assistant: ACTIVE / OFF
      */
     private fun updateSystemStatus() {
         // 1. Location Permission
@@ -487,7 +347,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 3. Accessibility Status
-        val accOn = isAccessibilityServiceEnabled(this, KaikoAccessibilityService::class.java)
+        val accOn = KaikoAccessibilityService.isAccessibilityServiceEnabled(this)
         if (accOn) {
             binding.tvAccessibilityStatusValue.text = "ON"
             binding.tvAccessibilityStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
@@ -498,8 +358,14 @@ class MainActivity : AppCompatActivity() {
 
         // 4. Guardians Count Status
         val guardianCount = TriggerManager.getConfiguredGuardiansCount(this)
-        val countText = "$guardianCount ${if (guardianCount == 1) "guardian" else "guardians"} configured"
-        binding.tvGuardiansStatusValue.text = countText
+        binding.tvGuardiansConfiguredCount.text = "$guardianCount / ${TriggerManager.MIN_GUARDIANS} configured (${TriggerManager.MIN_GUARDIANS} required)"
+        if (guardianCount >= TriggerManager.MIN_GUARDIANS) {
+            binding.tvGuardiansStatusValue.text = "COMPLETE"
+            binding.tvGuardiansStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvGuardiansStatusValue.text = "INCOMPLETE"
+            binding.tvGuardiansStatusValue.setTextColor(ContextCompat.getColor(this, R.color.emergency_red))
+        }
 
         // 5. Voice Trigger Status
         val voiceOn = TriggerManager.isVoiceTriggerEnabled(this)
@@ -509,6 +375,16 @@ class MainActivity : AppCompatActivity() {
         } else {
             binding.tvVoiceTriggerStatusValue.text = "OFF"
             binding.tvVoiceTriggerStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
+        }
+
+        // 6. Power Button Assistant Status
+        val isAssistant = TriggerManager.isDefaultAssistant(this)
+        if (isAssistant) {
+            binding.tvPowerButtonStatusValue.text = "ACTIVE"
+            binding.tvPowerButtonStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvPowerButtonStatusValue.text = "OFF"
+            binding.tvPowerButtonStatusValue.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
         }
     }
 
@@ -578,25 +454,5 @@ class MainActivity : AppCompatActivity() {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         requestPermissionsLauncher.launch(permissions.toTypedArray())
-    }
-
-    private fun isAccessibilityServiceEnabled(
-        context: Context,
-        serviceClass: Class<out AccessibilityService>
-    ): Boolean {
-        val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
-        val runningServices = am?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-        if (runningServices != null) {
-            for (service in runningServices) {
-                val serviceInfo = service.resolveInfo?.serviceInfo
-                if (serviceInfo != null &&
-                    serviceInfo.packageName == context.packageName &&
-                    serviceInfo.name == serviceClass.name
-                ) {
-                    return true
-                }
-            }
-        }
-        return false
     }
 }

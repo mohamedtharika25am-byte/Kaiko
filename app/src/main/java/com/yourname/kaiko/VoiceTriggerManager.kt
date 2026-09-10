@@ -91,14 +91,12 @@ object VoiceTriggerManager {
             }
         }
 
-        // 2. Check custom voice phrase if configured and enabled
-        if (TriggerManager.isCustomVoicePhraseEnabled(context)) {
-            val custom = TriggerManager.getCustomVoicePhrase(context)
-            if (custom.isNotBlank()) {
-                val normalizedCustom = normalizeText(custom)
-                if (normalizedCustom.isNotBlank() && containsPhrase(normalizedSpoken, normalizedCustom)) {
-                    return Pair(true, custom)
-                }
+        // 2. Check all custom emergency phrases (up to 5)
+        val customPhrases = TriggerManager.getCustomVoicePhrases(context)
+        for (custom in customPhrases) {
+            val normalizedCustom = normalizeText(custom)
+            if (normalizedCustom.isNotBlank() && containsPhrase(normalizedSpoken, normalizedCustom)) {
+                return Pair(true, custom)
             }
         }
 
@@ -186,10 +184,18 @@ object VoiceTriggerManager {
         }
 
         try {
-            destroyRecognizer()
+            // Lifecycle handling: reuse existing SpeechRecognizer instance rather than
+            // destroying and rebuilding on every cycle (which triggers repeated system start beeps)
+            if (speechRecognizer == null) {
+                speechRecognizer = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                    SpeechRecognizer.isOnDeviceRecognitionAvailable(ctx)) {
+                    Log.d(TAG, "Using on-device speech recognizer to avoid remote network/chime overhead.")
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(ctx)
+                } else {
+                    SpeechRecognizer.createSpeechRecognizer(ctx)
+                }
 
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(ctx).apply {
-                setRecognitionListener(object : RecognitionListener {
+                speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {
                         Log.d(TAG, "SpeechRecognizer ready for speech.")
                         listener?.onStateChanged(true, "Listening for emergency phrases...")
@@ -223,6 +229,8 @@ object VoiceTriggerManager {
 
                     override fun onEvent(eventType: Int, params: Bundle?) {}
                 })
+            } else {
+                speechRecognizer?.cancel()
             }
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -230,6 +238,11 @@ object VoiceTriggerManager {
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, ctx.packageName)
+                // Dictation mode hint avoids conversational assistant audio prompts on supported platforms
+                putExtra("android.speech.extra.DICTATION_MODE", true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
             }
 
             speechRecognizer?.startListening(intent)
@@ -239,6 +252,7 @@ object VoiceTriggerManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start speech recognizer: ${e.message}", e)
             listener?.onStateChanged(false, "Error initializing microphone: ${e.message}")
+            destroyRecognizer()
             scheduleRestart(2000L)
         }
     }
@@ -265,9 +279,13 @@ object VoiceTriggerManager {
             return
         }
 
-        // For temporary timeouts or no-match, quietly restart the listening cycle
+        // For temporary timeouts or no-match, quietly restart with backoff to prevent tight reconnect loops
         if (isListening) {
-            val retryDelay = if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) 1000L else 300L
+            val retryDelay = when (error) {
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> 2000L
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT, SpeechRecognizer.ERROR_NO_MATCH -> 1200L
+                else -> 1500L
+            }
             scheduleRestart(retryDelay)
         }
     }

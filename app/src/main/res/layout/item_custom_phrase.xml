@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_status_item"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/tvPhraseNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/primary"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvPhraseText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp" />
+
+    <!-- Edit Icon: Small neutral/grey pencil icon (Professional 4th Style) -->
+    <ImageButton
+        android:id="@+id/btnEditPhrase"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Edit custom phrase"
+        android:padding="8dp"
+        android:src="@drawable/ic_edit" />
+
+    <!-- Remove Icon: Small red delete/trash icon (Professional 4th Style) -->
+    <ImageButton
+        android:id="@+id/btnRemovePhrase"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Remove custom phrase"
+        android:padding="8dp"
+        android:src="@drawable/ic_delete" />
+
+</LinearLayout>

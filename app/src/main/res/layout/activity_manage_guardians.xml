@@ -7,7 +7,7 @@
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Top Bar with Back Button (BLUE: Navigation & Icons) -->
+    <!-- Top Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -41,7 +41,8 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true">
 
         <LinearLayout
@@ -50,9 +51,9 @@
             android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="16dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="24dp">
 
-            <!-- Setup Status Banner -->
+            <!-- Responsive Setup Status Banner -->
             <LinearLayout
                 android:id="@+id/layoutStatusBanner"
                 android:layout_width="match_parent"
@@ -75,14 +76,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
-                    android:lineSpacingExtra="2dp"
+                    android:lineSpacingExtra="3dp"
                     android:text="Kaiko requires at least 3 guardians. All 3 must be configured before guardian setup is considered complete."
                     android:textColor="@color/text_primary"
                     android:textSize="13sp" />
 
             </LinearLayout>
 
-            <!-- Dynamic Container for Guardian Cards (Slot 1, 2, 3...) -->
+            <!-- Dynamic Container for Guardian Cards (Slot 1 to 10) -->
             <LinearLayout
                 android:id="@+id/llGuardiansContainer"
                 android:layout_width="match_parent"
@@ -171,5 +172,21 @@
         </LinearLayout>
 
     </ScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider_color" />
+
+    <!-- Persistent Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/background"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemTextColor="@color/nav_item_color"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu" />
 
 </LinearLayout>

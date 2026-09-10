@@ -79,6 +79,7 @@ object TriggerManager {
     const val TRIGGER_QUICK_ACCESS = "Quick Access Trigger"
     const val TRIGGER_DISCREET_SAFETY = "Discreet Safety Trigger"
     const val TRIGGER_VOICE = "Voice Safety Trigger"
+    const val TRIGGER_POWER_BUTTON = "Power Button Trigger"
 
     // Guardian Contact Keys (Preserving existing keys for backward compatibility)
     const val KEY_GUARDIAN_PHONE = "guardian_phone_number"
@@ -91,9 +92,15 @@ object TriggerManager {
     const val KEY_SOS_DELIVERY_ALL_AT_ONCE = "sos_delivery_all_at_once"
 
     // Voice Trigger Storage
+    const val MAX_CUSTOM_VOICE_PHRASES = 5
     const val KEY_VOICE_TRIGGER_ENABLED = "voice_trigger_enabled"
     const val KEY_CUSTOM_VOICE_PHRASE = "custom_voice_phrase"
     const val KEY_CUSTOM_VOICE_PHRASE_ENABLED = "custom_voice_phrase_enabled"
+    const val KEY_CUSTOM_VOICE_PHRASES_DATA = "custom_voice_phrases_data_json"
+
+    // Guardian Constants
+    const val MAX_GUARDIANS = 10
+    const val MIN_GUARDIANS = 3
 
     // Configuration Keys
     const val KEY_ESCALATION_DELAY_SECONDS = "escalation_delay_seconds"
@@ -143,6 +150,7 @@ object TriggerManager {
             TRIGGER_QUICK_ACCESS, "widget", "quick_settings_tile", "quick_access" -> TRIGGER_QUICK_ACCESS
             TRIGGER_DISCREET_SAFETY, "disguised_widget", "discreet" -> TRIGGER_DISCREET_SAFETY
             TRIGGER_VOICE, "voice", "voice_trigger", "voice_safety" -> TRIGGER_VOICE
+            TRIGGER_POWER_BUTTON, "power_button", "power_button_assistant", "assistant" -> TRIGGER_POWER_BUTTON
             else -> TRIGGER_MANUAL_APP
         }
     }
@@ -1398,17 +1406,107 @@ object TriggerManager {
             .apply()
     }
 
+    fun getCustomVoicePhrases(context: Context): List<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val jsonString = prefs.getString(KEY_CUSTOM_VOICE_PHRASES_DATA, null)
+        if (!jsonString.isNullOrBlank()) {
+            try {
+                val jsonArray = JSONArray(jsonString)
+                val list = mutableListOf<String>()
+                for (i in 0 until jsonArray.length()) {
+                    val p = jsonArray.getString(i).trim()
+                    if (p.isNotBlank()) list.add(p)
+                }
+                return list
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing custom phrases json: ${e.message}")
+            }
+        }
+        // Backward compatibility migration from single phrase
+        val legacy = prefs.getString(KEY_CUSTOM_VOICE_PHRASE, "")?.trim() ?: ""
+        if (legacy.isNotBlank()) {
+            val list = listOf(legacy)
+            saveCustomVoicePhrases(context, list)
+            return list
+        }
+        return emptyList()
+    }
+
+    fun saveCustomVoicePhrases(context: Context, phrases: List<String>) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val jsonArray = JSONArray()
+        val cleaned = phrases.map { it.trim() }.filter { it.isNotBlank() }.take(MAX_CUSTOM_VOICE_PHRASES)
+        for (p in cleaned) {
+            jsonArray.put(p)
+        }
+        prefs.edit()
+            .putString(KEY_CUSTOM_VOICE_PHRASES_DATA, jsonArray.toString())
+            .putString(KEY_CUSTOM_VOICE_PHRASE, cleaned.firstOrNull() ?: "")
+            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, cleaned.isNotEmpty())
+            .apply()
+    }
+
+    fun addCustomVoicePhrase(context: Context, phrase: String): Boolean {
+        val trimmed = phrase.trim()
+        if (trimmed.isBlank()) return false
+        val current = getCustomVoicePhrases(context).toMutableList()
+        if (current.size >= MAX_CUSTOM_VOICE_PHRASES) return false
+
+        // Prevent duplicates (case-insensitive against other custom & default phrases)
+        val isDuplicate = current.any { it.equals(trimmed, ignoreCase = true) } ||
+                getDefaultEmergencyPhrases().any { it.equals(trimmed, ignoreCase = true) }
+        if (isDuplicate) return false
+
+        current.add(trimmed)
+        saveCustomVoicePhrases(context, current)
+        return true
+    }
+
+    fun updateCustomVoicePhrase(context: Context, index: Int, newPhrase: String): Boolean {
+        val trimmed = newPhrase.trim()
+        if (trimmed.isBlank()) return false
+        val current = getCustomVoicePhrases(context).toMutableList()
+        if (index !in current.indices) return false
+
+        // Prevent duplicate with another phrase
+        val isDuplicate = current.withIndex().any { (idx, p) -> idx != index && p.equals(trimmed, ignoreCase = true) } ||
+                getDefaultEmergencyPhrases().any { it.equals(trimmed, ignoreCase = true) }
+        if (isDuplicate) return false
+
+        current[index] = trimmed
+        saveCustomVoicePhrases(context, current)
+        return true
+    }
+
+    fun removeCustomVoicePhrase(context: Context, index: Int): Boolean {
+        val current = getCustomVoicePhrases(context).toMutableList()
+        if (index in current.indices) {
+            current.removeAt(index)
+            saveCustomVoicePhrases(context, current)
+            return true
+        }
+        return false
+    }
+
+    fun getCustomVoicePhrasesCount(context: Context): Int {
+        return getCustomVoicePhrases(context).size
+    }
+
     fun getCustomVoicePhrase(context: Context): String {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_CUSTOM_VOICE_PHRASE, "") ?: ""
+        val list = getCustomVoicePhrases(context)
+        return list.firstOrNull() ?: ""
     }
 
     fun setCustomVoicePhrase(context: Context, phrase: String) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(KEY_CUSTOM_VOICE_PHRASE, phrase.trim())
-            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, true)
-            .apply()
+        val trimmed = phrase.trim()
+        if (trimmed.isNotBlank()) {
+            val list = getCustomVoicePhrases(context).toMutableList()
+            if (list.isEmpty()) {
+                addCustomVoicePhrase(context, trimmed)
+            } else {
+                updateCustomVoicePhrase(context, 0, trimmed)
+            }
+        }
     }
 
     fun isCustomVoicePhraseEnabled(context: Context): Boolean {
@@ -1424,10 +1522,28 @@ object TriggerManager {
     }
 
     fun removeCustomVoicePhrase(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .remove(KEY_CUSTOM_VOICE_PHRASE)
-            .putBoolean(KEY_CUSTOM_VOICE_PHRASE_ENABLED, false)
-            .apply()
+        saveCustomVoicePhrases(context, emptyList())
+    }
+
+    fun isDefaultAssistant(context: Context): Boolean {
+        return KaikoVoiceInteractionService.isDefaultAssistant(context)
+    }
+
+    fun openDefaultAssistantSettings(context: Context) {
+        val intents = listOf(
+            Intent(android.provider.Settings.ACTION_VOICE_INPUT_SETTINGS),
+            Intent("android.settings.VOICE_INPUT_SETTINGS"),
+            Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS),
+            Intent(android.provider.Settings.ACTION_SETTINGS)
+        )
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(intent)
+                return
+            } catch (e: Exception) {
+                // Try next supported intent
+            }
+        }
     }
 }

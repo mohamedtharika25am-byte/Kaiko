@@ -19,6 +19,23 @@ class KaikoAccessibilityService : AccessibilityService() {
         private const val SLIDING_WINDOW_MS = 2000L  // 2 seconds window for 3 presses
         private const val REQUIRED_PRESS_COUNT = 3   // 3 presses of Volume Down
         private const val COOLDOWN_PERIOD_MS = 5000L // 5 seconds cooldown after trigger
+
+        fun isAccessibilityServiceEnabled(context: android.content.Context): Boolean {
+            val am = context.getSystemService(android.content.Context.ACCESSIBILITY_SERVICE) as? android.view.accessibility.AccessibilityManager
+            val runningServices = am?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            if (runningServices != null) {
+                for (service in runningServices) {
+                    val serviceInfo = service.resolveInfo?.serviceInfo
+                    if (serviceInfo != null &&
+                        serviceInfo.packageName == context.packageName &&
+                        serviceInfo.name == KaikoAccessibilityService::class.java.name
+                    ) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
     }
 
     // Sliding window of timestamps for Volume Down key-down events

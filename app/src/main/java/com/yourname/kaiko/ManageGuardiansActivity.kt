@@ -9,14 +9,10 @@ import android.provider.ContactsContract
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Spinner
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import com.yourname.kaiko.databinding.ActivityManageGuardiansBinding
 import com.yourname.kaiko.databinding.DialogAddEditGuardianBinding
@@ -25,16 +21,17 @@ import com.yourname.kaiko.databinding.ItemGuardianCardBinding
 import com.yourname.kaiko.databinding.ItemGuardianEmptyBinding
 
 /**
- * Dedicated Manage Guardians Screen (Kaiko v1.5.0).
+ * Dedicated Manage Guardians Screen (Kaiko v1.8.0).
+ * 
  * Features:
- * 1. Minimum 3 guardians required.
- * 2. Guardian cards showing Name, Relation, Phone Number (no priority, no unknown placeholders).
- * 3. 📞 Call & 💬 Message standard native actions on each card.
- * 4. Add Guardian via native phone Contacts picker or Manual entry.
- * 5. Edit and Remove guardian (enforcing minimum 3 guardians restriction).
- * 6. SOS Delivery Mode setting:
- *    - OFF: Guardian 1 → Guardian 2 → Guardian 3
- *    - ON: All guardians receive SOS simultaneously
+ * 1. Minimum 3 guardians required; up to 10 guardians supported.
+ * 2. Responsive setup-complete banner ("X emergency guardians configured.\nSetup completed").
+ * 3. Prevents adding an 11th guardian.
+ * 4. Unified professional edit/remove icons (grey pencil & red trash).
+ * 5. Call & Message native actions on each card.
+ * 6. Native Contacts picker and manual text entry.
+ * 7. SOS Delivery Mode setting (all-at-once vs sequential).
+ * 8. Persistent bottom navigation bar.
  */
 class ManageGuardiansActivity : AppCompatActivity() {
 
@@ -74,14 +71,59 @@ class ManageGuardiansActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupTopBar()
+        setupBottomNavigation()
         setupDeliveryModeSetting()
         setupAddGuardianButton()
         renderGuardiansList()
     }
 
+    override fun onResume() {
+        super.onResume()
+        binding.bottomNavigationView.selectedItemId = R.id.nav_guardians
+        renderGuardiansList()
+    }
+
     private fun setupTopBar() {
         binding.btnBack.setOnClickListener {
-            finish()
+            val intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+            }
+            startActivity(intent)
+            overridePendingTransition(0, 0)
+        }
+    }
+
+    private fun setupBottomNavigation() {
+        binding.bottomNavigationView.selectedItemId = R.id.nav_guardians
+        binding.bottomNavigationView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_emergency -> {
+                    val intent = Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                R.id.nav_voice -> {
+                    val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                R.id.nav_guardians -> true
+                R.id.nav_settings -> {
+                    val intent = Intent(this, SettingsActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    }
+                    startActivity(intent)
+                    overridePendingTransition(0, 0)
+                    true
+                }
+                else -> false
+            }
         }
     }
 
@@ -110,6 +152,14 @@ class ManageGuardiansActivity : AppCompatActivity() {
     private fun setupAddGuardianButton() {
         binding.btnAddGuardian.setOnClickListener {
             val currentGuardians = TriggerManager.getAllGuardians(this)
+            val configuredCount = currentGuardians.count { it.phone.isNotBlank() }
+
+            // Prevent adding an 11th guardian
+            if (configuredCount >= TriggerManager.MAX_GUARDIANS) {
+                Toast.makeText(this, "Maximum 10 guardians configured. Cannot add more.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             // If there's an empty slot among 1..3, target that slot, else append
             val targetSlot = if (currentGuardians.size < 3) currentGuardians.size else null
             showAddMethodDialog(targetSlot)
@@ -117,9 +167,9 @@ class ManageGuardiansActivity : AppCompatActivity() {
     }
 
     /**
-     * Requirement 2 & 3: Renders Guardian cards.
-     * Ensures Guardian 1, Guardian 2, Guardian 3 are always displayed.
-     * All 3 must be configured before guardian setup is considered complete.
+     * Requirement 4: Renders Guardian cards up to 10.
+     * Enforces minimum 3 guardians compulsory.
+     * Responsive setup-complete banner layout without clipping.
      */
     private fun renderGuardiansList() {
         binding.llGuardiansContainer.removeAllViews()
@@ -127,19 +177,30 @@ class ManageGuardiansActivity : AppCompatActivity() {
         val guardians = TriggerManager.getAllGuardians(this).toMutableList()
         val configuredCount = guardians.count { it.phone.isNotBlank() }
 
-        // Update top status banner
-        if (configuredCount < 3) {
+        // Update top status banner responsively
+        if (configuredCount < TriggerManager.MIN_GUARDIANS) {
             binding.layoutStatusBanner.setBackgroundResource(R.drawable.bg_status_warning)
             binding.tvStatusIcon.text = "⚠️"
-            binding.tvStatusText.text = "Kaiko requires at least 3 guardians. Configured: $configuredCount / 3.\nAll 3 must be configured before guardian setup is considered complete."
+            binding.tvStatusText.text = "Kaiko requires at least 3 guardians. Configured: $configuredCount / ${TriggerManager.MIN_GUARDIANS}.\nAll 3 must be configured before guardian setup is considered complete."
         } else {
             binding.layoutStatusBanner.setBackgroundResource(R.drawable.bg_status_success)
             binding.tvStatusIcon.text = "✅"
-            binding.tvStatusText.text = "$configuredCount emergency guardians configured. Setup complete."
+            binding.tvStatusText.text = "$configuredCount emergency guardians configured.\nSetup completed"
         }
 
-        // We display at least 3 slots (Guardian 1, Guardian 2, Guardian 3)
-        val totalSlots = maxOf(3, guardians.size)
+        // Prevent adding an 11th guardian
+        if (configuredCount >= TriggerManager.MAX_GUARDIANS) {
+            binding.btnAddGuardian.isEnabled = false
+            binding.btnAddGuardian.alpha = 0.5f
+            binding.btnAddGuardian.text = "MAXIMUM 10 GUARDIANS REACHED (10/10)"
+        } else {
+            binding.btnAddGuardian.isEnabled = true
+            binding.btnAddGuardian.alpha = 1.0f
+            binding.btnAddGuardian.text = getString(R.string.add_guardian_btn)
+        }
+
+        // Display at least 3 slots (Guardian 1, 2, 3), up to guardians.size (max 10)
+        val totalSlots = maxOf(3, guardians.size).coerceAtMost(TriggerManager.MAX_GUARDIANS)
 
         for (slotIndex in 0 until totalSlots) {
             val guardian = guardians.getOrNull(slotIndex)
@@ -155,15 +216,15 @@ class ManageGuardiansActivity : AppCompatActivity() {
 
                 cardBinding.tvGuardianSlot.text = "Guardian $slotNumber"
 
-                // Name: Optional, do not show "Unknown"
+                // Name: Optional, never "Unknown"
                 if (guardian.name.isNotBlank()) {
                     cardBinding.tvGuardianName.visibility = View.VISIBLE
-                    cardBinding.tvGuardianName.text = "👤 ${guardian.name.trim()}"
+                    cardBinding.tvGuardianName.text = guardian.name.trim()
                 } else {
                     cardBinding.tvGuardianName.visibility = View.GONE
                 }
 
-                // Relation: Optional, do not show "Unknown"
+                // Relation: Optional, never "Unknown"
                 if (guardian.relation.isNotBlank() && !guardian.relation.startsWith("Select Relation", ignoreCase = true)) {
                     cardBinding.tvGuardianRelation.visibility = View.VISIBLE
                     cardBinding.tvGuardianRelation.text = guardian.relation.trim()
@@ -174,7 +235,7 @@ class ManageGuardiansActivity : AppCompatActivity() {
                 // Phone: Required
                 cardBinding.tvGuardianPhone.text = guardian.phone
 
-                // 📞 Call: Normal Android phone call action
+                // 📞 Call: Normal phone dial action
                 cardBinding.btnCall.setOnClickListener {
                     val dialIntent = Intent(Intent.ACTION_DIAL).apply {
                         data = Uri.parse("tel:${guardian.phone.trim()}")
@@ -186,7 +247,7 @@ class ManageGuardiansActivity : AppCompatActivity() {
                     }
                 }
 
-                // 💬 Message: Normal Android SMS / Messages action
+                // 💬 Message: Normal SMS / Messages action
                 cardBinding.btnMessage.setOnClickListener {
                     val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
                         data = Uri.parse("smsto:${guardian.phone.trim()}")
@@ -198,14 +259,19 @@ class ManageGuardiansActivity : AppCompatActivity() {
                     }
                 }
 
-                // 👤+ Action: Open Contacts picker to change this guardian contact
-                cardBinding.btnChangeContact.setOnClickListener {
+                // Professional Edit Icon: Small neutral/grey pencil icon
+                cardBinding.btnEditGuardian.setOnClickListener {
                     pendingSlotIndex = slotIndex
-                    handleChooseFromContacts()
+                    showAddEditGuardianDialog(
+                        targetSlotIndex = slotIndex,
+                        initialName = guardian.name,
+                        initialRelation = guardian.relation,
+                        initialPhone = guardian.phone
+                    )
                 }
 
-                // Remove: Enforce minimum 3 guardians restriction
-                cardBinding.btnRemove.setOnClickListener {
+                // Professional Remove Icon: Small red delete/trash icon
+                cardBinding.btnRemoveGuardian.setOnClickListener {
                     handleRemoveGuardian(slotIndex)
                 }
 
@@ -228,15 +294,14 @@ class ManageGuardiansActivity : AppCompatActivity() {
     }
 
     /**
-     * Requirement 8: Edit / Remove Guardian.
+     * Requirement 4 & 5: Edit / Remove Guardian.
      * Do NOT allow removal if it would leave fewer than 3 guardians.
-     * Show: "Kaiko requires at least 3 guardians."
      */
     private fun handleRemoveGuardian(indexToRemove: Int) {
         val currentGuardians = TriggerManager.getAllGuardians(this).toMutableList()
         val configuredCount = currentGuardians.count { it.phone.isNotBlank() }
 
-        if (configuredCount <= 3) {
+        if (configuredCount <= TriggerManager.MIN_GUARDIANS) {
             AlertDialog.Builder(this)
                 .setTitle("Cannot Remove Guardian")
                 .setMessage(getString(R.string.min_guardians_warning))
@@ -261,9 +326,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
             .show()
     }
 
-    /**
-     * Dialog to choose between choosing from contacts or manual add.
-     */
     private fun showAddMethodDialog(slotIndex: Int?) {
         pendingSlotIndex = slotIndex
 
@@ -296,10 +358,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    /**
-     * Requirement 4: Choose from Phone Contacts.
-     * Checks and requests permission with rationale if needed.
-     */
     private fun handleChooseFromContacts() {
         val hasPermission = ContextCompat.checkSelfPermission(
             this,
@@ -309,7 +367,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         if (hasPermission) {
             openNativeContactPicker()
         } else {
-            // Explain briefly: "Allow Kaiko to access your contacts to select an emergency guardian."
             AlertDialog.Builder(this)
                 .setTitle("Contacts Permission")
                 .setMessage(getString(R.string.contacts_permission_rationale))
@@ -321,9 +378,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Launches native Android Contacts picker.
-     */
     private fun openNativeContactPicker() {
         try {
             val pickIntent = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
@@ -333,9 +387,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Extracts name and phone number from contact URI, then opens Review/Edit dialog.
-     */
     private fun retrieveContactDetails(contactUri: Uri) {
         var name = ""
         var phoneNumber = ""
@@ -366,7 +417,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         }
         val initialRelation = currentGuardian?.relation ?: ""
 
-        // Open Review/Edit dialog with prefilled data
         showAddEditGuardianDialog(
             targetSlotIndex = pendingSlotIndex,
             initialName = name,
@@ -375,18 +425,20 @@ class ManageGuardiansActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * Requirement 3, 5, 6: Add / Edit Guardian Form Dialog.
-     * Name: Optional
-     * Relation: Optional
-     * Phone Number: Required
-     */
     private fun showAddEditGuardianDialog(
         targetSlotIndex: Int?,
         initialName: String,
         initialRelation: String,
         initialPhone: String
     ) {
+        val currentGuardians = TriggerManager.getAllGuardians(this).toMutableList()
+
+        // Prevent adding an 11th guardian
+        if (targetSlotIndex == null && currentGuardians.size >= TriggerManager.MAX_GUARDIANS) {
+            Toast.makeText(this, "Maximum 10 guardians configured. Cannot add more.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val dialogBinding = DialogAddEditGuardianBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(this)
             .setView(dialogBinding.root)
@@ -395,13 +447,13 @@ class ManageGuardiansActivity : AppCompatActivity() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         val isEditMode = targetSlotIndex != null &&
-                targetSlotIndex < TriggerManager.getAllGuardians(this).size &&
-                TriggerManager.getAllGuardians(this)[targetSlotIndex].phone.isNotBlank()
+                targetSlotIndex < currentGuardians.size &&
+                currentGuardians[targetSlotIndex].phone.isNotBlank()
 
         dialogBinding.tvDialogTitle.text = if (isEditMode) {
             "Edit Guardian ${(targetSlotIndex ?: 0) + 1}"
         } else {
-            val slotNum = if (targetSlotIndex != null) "${targetSlotIndex + 1}" else "${TriggerManager.getAllGuardians(this).size + 1}"
+            val slotNum = if (targetSlotIndex != null) "${targetSlotIndex + 1}" else "${currentGuardians.size + 1}"
             "Add Guardian $slotNum"
         }
 
@@ -417,7 +469,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
         )
         dialogBinding.spinnerRelation.adapter = spinnerAdapter
 
-        // Select initial relation if present
         if (initialRelation.isNotBlank()) {
             val pos = relationsArray.indexOfFirst { it.equals(initialRelation, ignoreCase = true) }
             if (pos >= 0) {
@@ -444,7 +495,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
             }
 
             // 2. Prevent duplicate phone numbers
-            val currentGuardians = TriggerManager.getAllGuardians(this).toMutableList()
             val isDuplicate = currentGuardians.withIndex().any { (idx, g) ->
                 idx != targetSlotIndex && g.phone.replace(Regex("[^0-9]"), "") == digits
             }
@@ -464,10 +514,14 @@ class ManageGuardiansActivity : AppCompatActivity() {
                 }
                 currentGuardians.add(newGuardian)
             } else {
+                if (currentGuardians.size >= TriggerManager.MAX_GUARDIANS) {
+                    Toast.makeText(this, "Maximum 10 guardians configured.", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                    return@setOnClickListener
+                }
                 currentGuardians.add(newGuardian)
             }
 
-            // Filter out empty placeholder entries if any
             val cleanedList = currentGuardians.filter { it.phone.isNotBlank() }
             TriggerManager.saveGuardians(this, cleanedList)
 
@@ -477,10 +531,5 @@ class ManageGuardiansActivity : AppCompatActivity() {
         }
 
         dialog.show()
-    }
-
-    private fun isValidPhoneNumber(phone: String): Boolean {
-        val digits = phone.replace(Regex("[^0-9]"), "")
-        return digits.length == 10
     }
 }
