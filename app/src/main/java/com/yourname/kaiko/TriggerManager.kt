@@ -1084,6 +1084,13 @@ object TriggerManager {
         return prefs.getLong(KEY_ESCALATION_DELAY_SECONDS, DEFAULT_ESCALATION_DELAY_SECONDS)
     }
 
+    fun setEscalationDelaySeconds(context: Context, seconds: Long) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putLong(KEY_ESCALATION_DELAY_SECONDS, seconds).apply()
+        Log.d(TAG, "Escalation delay set to: $seconds seconds")
+    }
+
+
     private fun broadcastStateChange(context: Context) {
         val intent = Intent(ACTION_STATE_CHANGED)
         context.sendBroadcast(intent)

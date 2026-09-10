@@ -105,14 +105,6 @@ class ManageGuardiansActivity : AppCompatActivity() {
                     overridePendingTransition(0, 0)
                     true
                 }
-                R.id.nav_voice -> {
-                    val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                    }
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
-                    true
-                }
                 R.id.nav_guardians -> true
                 R.id.nav_settings -> {
                     val intent = Intent(this, SettingsActivity::class.java).apply {
@@ -128,25 +120,60 @@ class ManageGuardiansActivity : AppCompatActivity() {
     }
 
     /**
-     * Requirement 9 & 10: SOS Delivery Mode toggle.
+     * Requirement: SOS Delivery Mode & Escalation Timeout.
+     * Mode: "Escalation Mode (Sequential)" vs "Send to all at once".
+     * Sequential Mode allows selecting timeout: 30s | 60s (Default) | 120s.
      */
     private fun setupDeliveryModeSetting() {
         val isAllAtOnce = TriggerManager.isSosDeliveryAllAtOnce(this)
         binding.switchDeliveryMode.isChecked = isAllAtOnce
-        updateDeliveryModeExplanation(isAllAtOnce)
+        updateDeliveryModeUi(isAllAtOnce)
 
         binding.switchDeliveryMode.setOnCheckedChangeListener { _, isChecked ->
             TriggerManager.setSosDeliveryAllAtOnce(this, isChecked)
-            updateDeliveryModeExplanation(isChecked)
+            updateDeliveryModeUi(isChecked)
+        }
+
+        binding.chipTimeout30.setOnClickListener {
+            TriggerManager.setEscalationDelaySeconds(this, 30L)
+            updateTimeoutChipsUi(30L)
+        }
+        binding.chipTimeout60.setOnClickListener {
+            TriggerManager.setEscalationDelaySeconds(this, 60L)
+            updateTimeoutChipsUi(60L)
+        }
+        binding.chipTimeout120.setOnClickListener {
+            TriggerManager.setEscalationDelaySeconds(this, 120L)
+            updateTimeoutChipsUi(120L)
         }
     }
 
-    private fun updateDeliveryModeExplanation(isAllAtOnce: Boolean) {
+    private fun updateDeliveryModeUi(isAllAtOnce: Boolean) {
         if (isAllAtOnce) {
+            binding.tvDeliveryModeSubtitle.text = "Simultaneous Delivery: ACTIVE"
             binding.tvDeliveryExplanation.text = getString(R.string.sos_delivery_on_desc)
+            binding.layoutEscalationTimeout.visibility = View.GONE
         } else {
+            binding.tvDeliveryModeSubtitle.text = "Escalation Mode (Sequential): ACTIVE"
             binding.tvDeliveryExplanation.text = getString(R.string.sos_delivery_off_desc)
+            binding.layoutEscalationTimeout.visibility = View.VISIBLE
+            val currentDelay = TriggerManager.getEscalationDelaySeconds(this)
+            updateTimeoutChipsUi(currentDelay)
         }
+    }
+
+    private fun updateTimeoutChipsUi(selectedDelay: Long) {
+        val white = ContextCompat.getColor(this, android.R.color.white)
+        val textPrimary = ContextCompat.getColor(this, R.color.text_primary)
+
+        binding.chipTimeout30.setBackgroundResource(if (selectedDelay == 30L) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        binding.chipTimeout30.setTextColor(if (selectedDelay == 30L) white else textPrimary)
+
+        binding.chipTimeout60.setBackgroundResource(if (selectedDelay == 60L) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        binding.chipTimeout60.setTextColor(if (selectedDelay == 60L) white else textPrimary)
+
+        binding.chipTimeout120.setBackgroundResource(if (selectedDelay == 120L) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+        binding.chipTimeout120.setTextColor(if (selectedDelay == 120L) white else textPrimary)
     }
 
     private fun setupAddGuardianButton() {
@@ -177,7 +204,7 @@ class ManageGuardiansActivity : AppCompatActivity() {
         val guardians = TriggerManager.getAllGuardians(this).toMutableList()
         val configuredCount = guardians.count { it.phone.isNotBlank() }
 
-        // Update top status banner responsively
+        // Update top status banner responsively without text cut-off
         if (configuredCount < TriggerManager.MIN_GUARDIANS) {
             binding.layoutStatusBanner.setBackgroundResource(R.drawable.bg_status_warning)
             binding.tvStatusIcon.text = "⚠️"
@@ -185,7 +212,7 @@ class ManageGuardiansActivity : AppCompatActivity() {
         } else {
             binding.layoutStatusBanner.setBackgroundResource(R.drawable.bg_status_success)
             binding.tvStatusIcon.text = "✅"
-            binding.tvStatusText.text = "$configuredCount emergency guardians configured.\nSetup completed"
+            binding.tvStatusText.text = "$configuredCount emergency guardians configured. Setup completed"
         }
 
         // Prevent adding an 11th guardian

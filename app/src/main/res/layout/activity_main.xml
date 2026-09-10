@@ -74,16 +74,17 @@
             </RelativeLayout>
 
             <!-- ============================================================= -->
-            <!-- 1. MAIN SOS TRIGGER BUTTON (Large circular, centered at top) -->
-            <!-- RED: Emergency/SOS elements ONLY -->
+            <!-- 1. MAIN SOS & PRIMARY GUARDIAN CALL (Vertically & Horizontally Centered) -->
             <!-- ============================================================= -->
             <LinearLayout
+                android:id="@+id/llCenterSosArea"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="20dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:minHeight="260dp"
+                android:orientation="vertical"
+                android:paddingVertical="12dp">
 
                 <LinearLayout
                     android:id="@+id/btnMainSos"
@@ -113,6 +114,40 @@
                         android:text="TAP TO TRIGGER"
                         android:textColor="#FFFFFF"
                         android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <!-- CALL PRIMARY GUARDIAN (Compact pill-shaped button: Height 48dp, Width 220dp) -->
+                <LinearLayout
+                    android:id="@+id/btnCallPrimaryGuardian"
+                    android:layout_width="220dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_button_call_primary"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Call Primary Guardian"
+                        android:src="@drawable/ic_call"
+                        app:tint="@color/safe_green_dark" />
+
+                    <TextView
+                        android:id="@+id/tvCallPrimaryGuardian"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Call Primary Guardian"
+                        android:textColor="@color/safe_green_dark"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                 </LinearLayout>

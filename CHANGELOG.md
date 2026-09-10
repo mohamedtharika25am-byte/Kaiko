@@ -2,6 +2,34 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.8.1] — 2026-09-10 23:30 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.8.1/Kaiko-v1.8.1.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 17  
+
+### Centered SOS, Primary Call Action, 3-Tab Bottom Nav, Escalation Timeouts & Compact Guardian Actions
+- **Home Page**:
+  - Main SOS button is now exactly centered vertically and horizontally within the viewport content area.
+  - Added dedicated "CALL PRIMARY GUARDIAN" compact pill-shaped button (48dp height, 220dp width) directly below the SOS button.
+  - Dynamic display of Guardian 1's saved name (e.g. "Call Amma", falling back to "Call Primary Guardian").
+  - Direct 1-tap phone dial action via Android system dialer without triggering or modifying the SOS pipeline.
+- **Bottom Navigation**:
+  - Removed "Voice" tab completely from the persistent bottom navigation bar.
+  - Simplified to 3 essential tabs: Emergency, Guardians, Settings.
+  - Retained full access to Voice Trigger from Settings.
+- **Settings Page**:
+  - Elevated "Voice Trigger" to the FIRST/topmost settings card.
+  - Real-time status badge (ON/OFF) and custom phrase count (e.g. 0/5) with direct navigation to the dedicated Voice Trigger configuration screen.
+- **Guardians Page**:
+  - Fixed setup status banner padding and layout to eliminate text cut-off ("X emergency guardians configured. Setup completed").
+  - Moved the SOS Delivery box to the TOP of the page above the guardian cards.
+  - Added full Escalation Mode options: "Escalation Mode (Sequential)" vs "Send to all at once".
+  - In Sequential mode, added interactive timeout chips: 30s | 60s (Default) | 120s connected to existing escalation logic.
+  - Replaced oversized text buttons [ CALL ] and [ MESSAGE ] with sleek, compact modern Material icon actions (📞 and 💬).
+- **Quality & Preservation**:
+  - Maintained clean white/light theme and color hierarchy.
+  - Preserved all existing triggers, permissions, widgets, background services, accessibility, and emergency flows.
+
 ## [v1.8.0] — 2026-09-10 16:30 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.8.0/Kaiko-v1.8.0.apk`  

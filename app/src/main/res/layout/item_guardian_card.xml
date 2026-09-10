@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -84,47 +85,56 @@
         tools:text="Father"
         tools:visibility="visible" />
 
-    <!-- Phone Number Row -->
-    <TextView
-        android:id="@+id/tvGuardianPhone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textColor="@color/text_primary"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        tools:text="9876543210" />
-
-    <!-- Call & Message Actions -->
-    <LinearLayout
+    <!-- Phone Number & Modern Compact Action Icons Row -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:orientation="horizontal">
+        android:layout_marginTop="8dp">
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnCall"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_button_outline"
-            android:text="Call"
-            android:textColor="@color/primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/tvGuardianPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            tools:text="9876543210" />
 
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnMessage"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_button_outline"
-            android:text="Message"
-            android:textColor="@color/primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-    </LinearLayout>
+            <!-- 📞 Call: Compact modern Material icon action (normal phone dial, does NOT trigger SOS) -->
+            <ImageButton
+                android:id="@+id/btnCall"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_button_call_primary"
+                android:contentDescription="Call Guardian"
+                android:padding="9dp"
+                android:src="@drawable/ic_call"
+                app:tint="@color/safe_green_dark" />
+
+            <!-- 💬 Message: Compact modern Material icon action (normal SMS, does NOT trigger SOS) -->
+            <ImageButton
+                android:id="@+id/btnMessage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_button_secondary"
+                android:contentDescription="Message Guardian"
+                android:padding="9dp"
+                android:src="@drawable/ic_message"
+                app:tint="@color/on_secondary" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
 
 </LinearLayout>

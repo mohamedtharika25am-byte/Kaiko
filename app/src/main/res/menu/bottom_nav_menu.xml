@@ -5,10 +5,6 @@
         android:icon="@drawable/ic_nav_emergency"
         android:title="Emergency" />
     <item
-        android:id="@+id/nav_voice"
-        android:icon="@drawable/ic_nav_voice"
-        android:title="Voice" />
-    <item
         android:id="@+id/nav_guardians"
         android:icon="@drawable/ic_nav_guardians"
         android:title="Guardians" />

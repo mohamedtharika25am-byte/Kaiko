@@ -220,4 +220,11 @@ class TriggerManagerTest {
         val normalizedSpoken = VoiceTriggerManager.normalizeText(spoken)
         assertTrue(normalizedSpoken.contains(normalized))
     }
+
+    @Test
+    fun testEscalationConstants() {
+        assertEquals(60L, TriggerManager.DEFAULT_ESCALATION_DELAY_SECONDS)
+        assertEquals("escalation_delay_seconds", TriggerManager.KEY_ESCALATION_DELAY_SECONDS)
+        assertEquals("sos_delivery_all_at_once", TriggerManager.KEY_SOS_DELIVERY_ALL_AT_ONCE)
+    }
 }

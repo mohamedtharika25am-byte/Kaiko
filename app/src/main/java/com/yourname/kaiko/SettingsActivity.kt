@@ -48,14 +48,6 @@ class SettingsActivity : AppCompatActivity() {
                     overridePendingTransition(0, 0)
                     true
                 }
-                R.id.nav_voice -> {
-                    val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                    }
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
-                    true
-                }
                 R.id.nav_guardians -> {
                     val intent = Intent(this, ManageGuardiansActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
@@ -71,6 +63,14 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupActions() {
+        // 0. VOICE TRIGGER (Requirement 3: Dedicated Page Navigation)
+        val openVoiceTrigger = {
+            val intent = Intent(this, VoiceTriggerActivity::class.java)
+            startActivity(intent)
+        }
+        binding.cardVoiceTriggerSettings.setOnClickListener { openVoiceTrigger() }
+        binding.btnConfigureVoiceTrigger.setOnClickListener { openVoiceTrigger() }
+
         // 1. MANAGE DEFAULT ASSISTANT (opens actual Android system Default Assistant settings)
         binding.btnConfigurePowerButton.setOnClickListener {
             TriggerManager.openDefaultAssistantSettings(this)
@@ -88,6 +88,24 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun updateStatuses() {
+        // Voice Trigger status & custom phrase count (Requirement 3)
+        val isVoiceEnabled = TriggerManager.isVoiceTriggerEnabled(this)
+        val customCount = TriggerManager.getCustomVoicePhrasesCount(this)
+        val maxCustom = TriggerManager.MAX_CUSTOM_VOICE_PHRASES
+
+        if (isVoiceEnabled) {
+            binding.tvVoiceStatusBadge.text = "ON"
+            binding.tvVoiceStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+            binding.tvVoiceTriggerStatus.text = "Status: ON (Listening)"
+            binding.tvVoiceTriggerStatus.setTextColor(ContextCompat.getColor(this, R.color.status_enabled))
+        } else {
+            binding.tvVoiceStatusBadge.text = "OFF"
+            binding.tvVoiceStatusBadge.setTextColor(ContextCompat.getColor(this, R.color.status_disabled))
+            binding.tvVoiceTriggerStatus.text = "Status: OFF"
+            binding.tvVoiceTriggerStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+        }
+        binding.tvCustomPhrasesCount.text = "Custom phrases: $customCount/$maxCustom (5 default active)"
+
         // Power Button Assistant status
         val isAssistant = TriggerManager.isDefaultAssistant(this)
         if (isAssistant) {

@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         setupListeners()
         updateActiveSosBanner()
         updateSystemStatus()
+        updateCallPrimaryGuardianButton()
         checkAccessibilityOnboarding()
         handleIncomingAction(intent)
     }
@@ -109,6 +111,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigationView.selectedItemId = R.id.nav_emergency
         updateSystemStatus()
         updateActiveSosBanner()
+        updateCallPrimaryGuardianButton()
 
         // If Voice Trigger is enabled and permission is granted, start continuous recognition
         if (TriggerManager.isVoiceTriggerEnabled(this) && VoiceTriggerManager.hasRecordAudioPermission(this)) {
@@ -142,14 +145,6 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_emergency -> true
-                R.id.nav_voice -> {
-                    val intent = Intent(this, VoiceTriggerActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                    }
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
-                    true
-                }
                 R.id.nav_guardians -> {
                     val intent = Intent(this, ManageGuardiansActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
@@ -167,6 +162,39 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 else -> false
+            }
+        }
+    }
+
+    /**
+     * Requirement 1: Call Primary Guardian button.
+     * Dynamic label with Guardian 1's saved name (fallback: "Call Primary Guardian").
+     * Normal phone dial action, does NOT trigger SOS.
+     */
+    private fun updateCallPrimaryGuardianButton() {
+        val guardians = TriggerManager.getAllGuardians(this)
+        val primaryGuardian = guardians.firstOrNull { it.phone.isNotBlank() }
+        val primaryName = primaryGuardian?.name?.trim()
+
+        if (!primaryName.isNullOrBlank()) {
+            binding.tvCallPrimaryGuardian.text = "Call $primaryName"
+        } else {
+            binding.tvCallPrimaryGuardian.text = "Call Primary Guardian"
+        }
+
+        binding.btnCallPrimaryGuardian.setOnClickListener {
+            val phone = primaryGuardian?.phone?.trim() ?: TriggerManager.getGuardianPhone(this, 1)
+            if (!phone.isNullOrBlank()) {
+                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$phone")
+                }
+                try {
+                    startActivity(dialIntent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Could not open dialer: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "No primary guardian configured. Add guardian in Guardians tab.", Toast.LENGTH_SHORT).show()
             }
         }
     }
