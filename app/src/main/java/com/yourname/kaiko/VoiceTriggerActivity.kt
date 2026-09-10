@@ -68,12 +68,15 @@ class VoiceTriggerActivity : AppCompatActivity(), VoiceTriggerManager.VoiceTrigg
     private fun setupTopBar() {
         binding.btnBack.setOnClickListener {
             finish()
+            overridePendingTransition(0, 0)
         }
     }
 
     override fun onResume() {
         super.onResume()
+        binding.bottomNavigationView.setOnItemSelectedListener(null)
         binding.bottomNavigationView.selectedItemId = R.id.nav_settings
+        setupBottomNavigation()
         updateVoiceTriggerUi()
         renderCustomPhrasesList()
 
@@ -83,7 +86,6 @@ class VoiceTriggerActivity : AppCompatActivity(), VoiceTriggerManager.VoiceTrigg
     }
 
     private fun setupBottomNavigation() {
-        binding.bottomNavigationView.selectedItemId = R.id.nav_settings
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_emergency -> {
@@ -92,6 +94,7 @@ class VoiceTriggerActivity : AppCompatActivity(), VoiceTriggerManager.VoiceTrigg
                     }
                     startActivity(intent)
                     overridePendingTransition(0, 0)
+                    finish()
                     true
                 }
                 R.id.nav_guardians -> {
@@ -100,15 +103,12 @@ class VoiceTriggerActivity : AppCompatActivity(), VoiceTriggerManager.VoiceTrigg
                     }
                     startActivity(intent)
                     overridePendingTransition(0, 0)
+                    finish()
                     true
                 }
                 R.id.nav_settings -> {
-                    val intent = Intent(this, SettingsActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                    }
-                    startActivity(intent)
-                    overridePendingTransition(0, 0)
                     finish()
+                    overridePendingTransition(0, 0)
                     true
                 }
                 else -> false

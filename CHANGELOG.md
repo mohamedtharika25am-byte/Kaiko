@@ -2,6 +2,20 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.8.2] — 2026-09-10 23:55 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.8.2/Kaiko-v1.8.2.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 18  
+
+### Dedicated Voice Trigger Screen Fix & Top Bar Navigation
+- **Configure Voice Trigger Navigation Fix**:
+  - Resolved an auto-close loop in `VoiceTriggerActivity` where setting `selectedItemId = R.id.nav_settings` in `onResume()` unintentionally triggered the bottom navigation listener's `finish()` action.
+  - Corrected listener attachment sequence to ensure programmatic tab selection does not trigger screen exit.
+  - Tapping **CONFIGURE VOICE TRIGGER** on the Settings card now smoothly and reliably opens the dedicated Voice Trigger configuration screen.
+- **Top App Bar Navigation**:
+  - Wired top bar back button (🔙) in `VoiceTriggerActivity` to smoothly return to Settings.
+  - Preserved direct bottom navigation to Emergency and Guardians screens from Voice Trigger screen.
+
 ## [v1.8.1] — 2026-09-10 23:30 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.8.1/Kaiko-v1.8.1.apk`  
