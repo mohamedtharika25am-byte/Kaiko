@@ -2,6 +2,23 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.8.3] — 2026-09-11 00:40 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.8.3/Kaiko-v1.8.3.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 19  
+
+### Voice Engine Sensitivity Restoration & Automatic Continuous Listening Auto-Resume
+- **Restored v1.7.0 High-Sensitivity Speech Recognition Engine**:
+  - Replaced the platform on-device recognizer with the proven, high-sensitivity standard `SpeechRecognizer.createSpeechRecognizer(ctx)`.
+  - Removed dictation mode extras and extended silence delays that caused short emergency phrases ("Help me", "Send SOS") to be dropped or delayed.
+  - Restored clean per-cycle recognizer lifecycle (`destroyRecognizer()` before creation) preventing stale binder locks and client error states.
+  - Restored fast cycle retries (300ms recovery, 1000ms if busy) eliminating multi-second audio dead zones.
+  - Fully preserved support for 5 default phrases and up to 5 user-configured custom emergency phrases.
+- **Auto-Resume Continuous Listening After Emergency Trigger**:
+  - Eliminated the permanent shutdown (`stopListening()`) that previously turned voice recognition off after phrase detection.
+  - Voice recognition now resets the audio buffer, alerts the SOS pipeline, and automatically resumes listening after a 5-second cooldown debounce window.
+  - Seamlessly maintains listening state across app navigations and when returning to the app.
+
 ## [v1.8.2] — 2026-09-10 23:55 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.8.2/Kaiko-v1.8.2.apk`  
