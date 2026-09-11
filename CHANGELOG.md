@@ -2,6 +2,37 @@
 
 All notable changes to the Kaiko application are documented in this file.
 
+## [v1.8.4] — 2026-09-11 15:30 IST
+> **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
+> **Release Artifact:** `release/v1.8.4/Kaiko-v1.8.4.apk`  
+> **Target SDK:** 34 (Android 14) | **Min SDK:** 26 (Android 8.0+) | **Version Code:** 20  
+
+### Guardian Response / SMS Acknowledgement (ACK)
+- **1-Tap Outgoing SMS Acknowledgement Action**:
+  - Outgoing emergency SOS SMS messages to guardians now include a clear acknowledgement instruction:
+    `🟢 ACKNOWLEDGE SOS:`
+    `Reply "KAIKO ACK" or tap:`
+    `sms:<userPhoneNumber>?body=KAIKO%20ACK`
+  - Tapping the action link opens the guardian's default Android SMS composer addressed to the Kaiko user's phone number with `"KAIKO ACK"` pre-filled; guardian only needs to press SEND.
+- **Strict Incoming SMS ACK Detection & Validation**:
+  - Implemented `GuardianAckReceiver` listening for `Telephony.Sms.Intents.SMS_RECEIVED_ACTION`.
+  - Added runtime `RECEIVE_SMS` permission handling without breaking normal SOS operations if denied.
+  - Strictly validates incoming ACK:
+    1. Message content matches `"KAIKO ACK"` (case-insensitive, whitespace-trimmed).
+    2. Active SOS event must be in progress (rejects stale/out-of-band ACKs).
+    3. Sender phone number matches a configured emergency guardian.
+    4. Guardian was an alerted recipient of the active SOS event.
+    5. Deduplication prevents multiple ACK alerts from the same guardian.
+- **Escalation Halting & State Machine Integration**:
+  - Upon valid ACK, automatically stops pending escalation alarms for that guardian/flow.
+  - Updates state machine (`GUARDIAN_X_ACKNOWLEDGED`), records responding guardian, and preserves the existing 4 SOS controls (`I'M SAFE`, `EMERGENCY`, `MISTOUCHED`, `TEST`).
+- **Dynamic Active SOS Acknowledgement UI**:
+  - Added real-time guardian response status display inside the Active SOS card on the Home screen.
+  - Dynamically displays configured guardian names and counts with live badges:
+    `🟢 ACKNOWLEDGED` | `⏳ WAITING` | `⏳ PENDING`.
+- **User Phone Number Configuration**:
+  - Added user phone number management card in Settings so the outgoing SMS action link accurately targets the device.
+
 ## [v1.8.3] — 2026-09-11 00:40 IST
 > **Build Status:** ✅ PASSED (`testDebugUnitTest`, `assembleRelease`)  
 > **Release Artifact:** `release/v1.8.3/Kaiko-v1.8.3.apk`  

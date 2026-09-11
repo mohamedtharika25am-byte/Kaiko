@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -417,15 +418,70 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Shows 4 Active SOS buttons ONLY when an actual SOS trigger action is active.
+     * Shows 4 Active SOS buttons and live Guardian ACK responses when an SOS trigger action is active.
      */
     private fun updateActiveSosBanner() {
         val currentState = TriggerManager.getCurrentState(this)
-        if (currentState.isActive()) {
+        val isAck = TriggerManager.getAcknowledgedGuardians(this).isNotEmpty() ||
+                currentState == SosState.GUARDIAN_1_ACKNOWLEDGED ||
+                currentState == SosState.GUARDIAN_2_ACKNOWLEDGED ||
+                currentState == SosState.GUARDIAN_3_ACKNOWLEDGED
+
+        if (currentState.isActive() || isAck) {
             binding.cardActiveSos.visibility = View.VISIBLE
             binding.tvActiveSosStatus.text = "Status: ${currentState.displayName}"
+            renderGuardianAckStatuses()
         } else {
             binding.cardActiveSos.visibility = View.GONE
+        }
+    }
+
+    /**
+     * Renders real-time acknowledgement status for each configured guardian.
+     */
+    private fun renderGuardianAckStatuses() {
+        val container = binding.llGuardianAckStatuses
+        container.removeAllViews()
+
+        val configuredGuardians = TriggerManager.getAllGuardians(this).filter { it.phone.isNotBlank() }
+        if (configuredGuardians.isEmpty()) {
+            binding.llGuardianAckContainer.visibility = View.GONE
+            return
+        }
+        binding.llGuardianAckContainer.visibility = View.VISIBLE
+
+        val alertedPhones = TriggerManager.getAlertedGuardians(this)
+        val ackPhones = TriggerManager.getAcknowledgedGuardians(this)
+
+        for ((idx, guardian) in configuredGuardians.withIndex()) {
+            val itemBinding = com.yourname.kaiko.databinding.ItemGuardianAckStatusBinding.inflate(
+                layoutInflater,
+                container,
+                false
+            )
+
+            val displayName = if (guardian.name.isNotBlank()) {
+                "${guardian.name} (Guardian ${idx + 1})"
+            } else {
+                "Guardian ${idx + 1}"
+            }
+            itemBinding.tvGuardianAckName.text = displayName
+
+            val isAck = ackPhones.any { TriggerManager.isPhoneMatch(it, guardian.phone) }
+            val isAlerted = alertedPhones.any { TriggerManager.isPhoneMatch(it, guardian.phone) }
+
+            if (isAck) {
+                itemBinding.tvGuardianAckStatus.text = "🟢 ACKNOWLEDGED"
+                itemBinding.tvGuardianAckStatus.setTextColor(ContextCompat.getColor(this, R.color.safe_green_dark))
+            } else if (isAlerted) {
+                itemBinding.tvGuardianAckStatus.text = "⏳ WAITING"
+                itemBinding.tvGuardianAckStatus.setTextColor(ContextCompat.getColor(this, R.color.emergency_red))
+            } else {
+                itemBinding.tvGuardianAckStatus.text = "⏳ PENDING"
+                itemBinding.tvGuardianAckStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
+            }
+
+            container.addView(itemBinding.root)
         }
     }
 
@@ -470,17 +526,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestAppPermissions() {
-        if (TriggerManager.hasLocationPermission(this)) {
-            return
+        val permissions = mutableListOf<String>()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.SEND_SMS)
         }
-        val permissions = mutableListOf(
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            permissions.add(Manifest.permission.RECEIVE_SMS)
+        }
+        if (!TriggerManager.hasLocationPermission(this)) {
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
-        requestPermissionsLauncher.launch(permissions.toTypedArray())
+        if (permissions.isNotEmpty()) {
+            requestPermissionsLauncher.launch(permissions.toTypedArray())
+        }
     }
 }

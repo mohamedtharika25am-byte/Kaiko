@@ -25,6 +25,11 @@
         android:name="android.permission.SEND_SMS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- RECEIVE_SMS: Required to detect incoming guardian SOS acknowledgement SMS (v1.8.4) -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_SMS"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Location permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -261,6 +266,16 @@
             <intent-filter>
                 <action android:name="com.yourname.kaiko.ACTION_MARK_SAFE" />
                 <action android:name="com.yourname.kaiko.ACTION_SIMULATE_ACK" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Guardian Response / SMS ACK BroadcastReceiver (v1.8.4) -->
+        <receiver
+            android:name=".GuardianAckReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 

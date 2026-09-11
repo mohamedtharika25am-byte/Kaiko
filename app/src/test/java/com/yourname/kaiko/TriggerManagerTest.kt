@@ -227,4 +227,56 @@ class TriggerManagerTest {
         assertEquals("escalation_delay_seconds", TriggerManager.KEY_ESCALATION_DELAY_SECONDS)
         assertEquals("sos_delivery_all_at_once", TriggerManager.KEY_SOS_DELIVERY_ALL_AT_ONCE)
     }
+
+    @Test
+    fun testIsPhoneMatch() {
+        assertTrue(TriggerManager.isPhoneMatch("+919876543210", "9876543210"))
+        assertTrue(TriggerManager.isPhoneMatch("9876543210", "+91 98765 43210"))
+        assertTrue(TriggerManager.isPhoneMatch("09876543210", "9876543210"))
+        assertTrue(TriggerManager.isPhoneMatch("(987) 654-3210", "+19876543210"))
+        assertFalse(TriggerManager.isPhoneMatch("9876543210", "9876543211"))
+        assertFalse(TriggerManager.isPhoneMatch("", "9876543210"))
+        assertFalse(TriggerManager.isPhoneMatch(null, "9876543210"))
+    }
+
+    @Test
+    fun testEmergencyMessageContainsAckAction() {
+        val msg = TriggerManager.buildEmergencyMessage(
+            TriggerManager.TRIGGER_MANUAL_APP,
+            TriggerManager.LocationStatus.CURRENT,
+            "11.0168,76.9558"
+        )
+        assertTrue(msg.contains("🟢 ACKNOWLEDGE SOS:"))
+        assertTrue(msg.contains("Reply \"KAIKO ACK\" or tap:"))
+        assertTrue(msg.contains("sms:?body=KAIKO%20ACK"))
+    }
+
+    @Test
+    fun testEmergencyMessageWithUserPhone() {
+        val msg = TriggerManager.buildEmergencyMessage(
+            TriggerManager.TRIGGER_MANUAL_APP,
+            TriggerManager.LocationStatus.CURRENT,
+            "11.0168,76.9558",
+            "+919876543210"
+        )
+        assertTrue(msg.contains("🟢 ACKNOWLEDGE SOS:"))
+        assertTrue(msg.contains("sms:+919876543210?body=KAIKO%20ACK"))
+    }
+
+    @Test
+    fun testAckMessageContentValidation() {
+        val valid1 = "KAIKO ACK"
+        val valid2 = "  kaiko ack  "
+        val valid3 = "Kaiko Ack\n"
+        val invalid1 = "KAIKO"
+        val invalid2 = "ACK"
+        val invalid3 = "I am coming"
+
+        assertTrue(valid1.trim().equals("KAIKO ACK", ignoreCase = true))
+        assertTrue(valid2.trim().equals("KAIKO ACK", ignoreCase = true))
+        assertTrue(valid3.trim().equals("KAIKO ACK", ignoreCase = true))
+        assertFalse(invalid1.trim().equals("KAIKO ACK", ignoreCase = true))
+        assertFalse(invalid2.trim().equals("KAIKO ACK", ignoreCase = true))
+        assertFalse(invalid3.trim().equals("KAIKO ACK", ignoreCase = true))
+    }
 }

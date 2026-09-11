@@ -81,6 +81,35 @@ class SettingsActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+        // 2.5 USER PHONE NUMBER FOR GUARDIAN ACK
+        val promptUserPhone = {
+            val currentPhone = TriggerManager.getUserPhoneNumber(this) ?: ""
+            val input = android.widget.EditText(this).apply {
+                hint = "Enter your mobile number"
+                inputType = android.text.InputType.TYPE_CLASS_PHONE
+                setText(currentPhone)
+                setSelection(text.length)
+            }
+            val container = android.widget.FrameLayout(this).apply {
+                setPadding(48, 16, 48, 8)
+                addView(input)
+            }
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("My Phone Number")
+                .setMessage("Enter the mobile number of this device so guardians can 1-tap open their SMS composer with pre-filled 'KAIKO ACK'.")
+                .setView(container)
+                .setPositiveButton("SAVE") { _, _ ->
+                    val entered = input.text.toString().trim()
+                    TriggerManager.setUserPhoneNumber(this, entered)
+                    updateStatuses()
+                    android.widget.Toast.makeText(this, "Phone number saved.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("CANCEL") { dialog, _ -> dialog.dismiss() }
+                .show()
+        }
+        binding.cardUserPhone.setOnClickListener { promptUserPhone() }
+        binding.btnConfigureUserPhone.setOnClickListener { promptUserPhone() }
+
         // 3. USER GUIDE
         binding.cardUserGuide.setOnClickListener {
             startActivity(Intent(this, UserGuideActivity::class.java))
@@ -116,6 +145,16 @@ class SettingsActivity : AppCompatActivity() {
             binding.tvPowerButtonLiveStatus.text = getString(R.string.power_button_status_inactive)
             binding.tvPowerButtonLiveStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
             binding.btnConfigurePowerButton.text = "MANAGE DEFAULT ASSISTANT"
+        }
+
+        // User Phone Number status
+        val userPhone = TriggerManager.getUserPhoneNumber(this)
+        if (!userPhone.isNullOrBlank()) {
+            binding.tvUserPhoneValue.text = "Phone Number: $userPhone"
+            binding.tvUserPhoneValue.setTextColor(ContextCompat.getColor(this, R.color.text_primary))
+        } else {
+            binding.tvUserPhoneValue.text = "Phone Number: Not set (auto-detect)"
+            binding.tvUserPhoneValue.setTextColor(ContextCompat.getColor(this, R.color.text_secondary))
         }
 
         // Accessibility status

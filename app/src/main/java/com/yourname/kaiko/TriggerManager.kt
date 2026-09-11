@@ -14,7 +14,9 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.telephony.PhoneNumberUtils
 import android.telephony.SmsManager
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -114,6 +116,8 @@ object TriggerManager {
     const val KEY_LAST_COORDS = "last_known_coords"
     const val KEY_HAS_PREVIOUS_LOCATION = "has_previous_location"
     const val KEY_ALERTED_GUARDIANS = "alerted_guardian_phones"
+    const val KEY_ACKNOWLEDGED_GUARDIANS = "acknowledged_guardian_phones"
+    const val KEY_USER_PHONE_NUMBER = "user_phone_number"
 
     // Broadcast Actions
     const val ACTION_STATE_CHANGED = "com.yourname.kaiko.ACTION_STATE_CHANGED"
@@ -175,6 +179,7 @@ object TriggerManager {
         // 1. Cancel any existing escalation timer & clean up previous event data
         cancelEscalationTimer(context)
         clearAlertedGuardians(context)
+        clearAcknowledgedGuardians(context)
 
         // 2. Persist fresh event state
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -233,7 +238,8 @@ object TriggerManager {
                 }
 
                 updateState(context, SosState.WAITING_FOR_GUARDIAN_1)
-                val smsText = buildEmergencyMessage(triggerMode, locationStatus, coords)
+                val userPhone = getUserPhoneNumber(context)
+                val smsText = buildEmergencyMessage(triggerMode, locationStatus, coords, userPhone)
 
                 for ((idx, guardian) in configuredGuardians.withIndex()) {
                     val phone = guardian.phone
@@ -276,8 +282,9 @@ object TriggerManager {
     fun dispatchToGuardian(context: Context, guardianIndex: Int, isRetry: Boolean = false) {
         CoroutineScope(Dispatchers.IO).launch {
             val currentState = getCurrentState(context)
-            if (currentState == SosState.USER_MARKED_SAFE || (!currentState.isActive() && currentState != SosState.SOS_TRIGGERED)) {
-                Log.d(TAG, "Dispatch halted. Current state is inactive: $currentState")
+            if (currentState == SosState.USER_MARKED_SAFE || (!currentState.isActive() && currentState != SosState.SOS_TRIGGERED) ||
+                getAcknowledgedGuardians(context).isNotEmpty()) {
+                Log.d(TAG, "Dispatch halted. Current state is inactive or guardian already acknowledged: $currentState")
                 return@launch
             }
 
@@ -381,7 +388,8 @@ object TriggerManager {
         prefs.edit().putInt(KEY_ACTIVE_GUARDIAN_INDEX, guardianIndex).apply()
 
         // Section 6, 7, 8, 9: Construct formatted message with trigger mode
-        val smsText = buildEmergencyMessage(triggerMode, locationStatus, coords)
+        val userPhone = getUserPhoneNumber(context)
+        val smsText = buildEmergencyMessage(triggerMode, locationStatus, coords, userPhone)
         Log.i(TAG, "Alerting Guardian $guardianIndex ($phone). isRetry=$isRetry. Status=$locationStatus")
 
         // Track guardian as alerted for this SOS event (Section 13)
@@ -413,7 +421,8 @@ object TriggerManager {
     fun buildEmergencyMessage(
         triggerMethod: String,
         locationStatus: LocationStatus,
-        coords: String?
+        coords: String?,
+        userPhone: String? = null
     ): String {
         val sb = StringBuilder()
         sb.append("🚨 KAIKO SOS ALERT\n\n")
@@ -435,6 +444,10 @@ object TriggerManager {
         }
 
         sb.append("Please contact or check on the user immediately.\n\n")
+        sb.append("🟢 ACKNOWLEDGE SOS:\n")
+        val smsTarget = if (!userPhone.isNullOrBlank()) userPhone.trim() else ""
+        sb.append("Reply \"KAIKO ACK\" or tap:\n")
+        sb.append("sms:$smsTarget?body=KAIKO%20ACK\n\n")
         sb.append("— Sent via Kaiko")
         return sb.toString()
     }
@@ -484,6 +497,165 @@ object TriggerManager {
     fun clearAlertedGuardians(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().remove(KEY_ALERTED_GUARDIANS).apply()
+    }
+
+    /**
+     * Tracks that a guardian has acknowledged the active SOS event (v1.8.4).
+     */
+    fun addAcknowledgedGuardian(context: Context, phoneNumber: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val set = prefs.getStringSet(KEY_ACKNOWLEDGED_GUARDIANS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        set.add(phoneNumber.trim())
+        prefs.edit().putStringSet(KEY_ACKNOWLEDGED_GUARDIANS, set).apply()
+        Log.i(TAG, "Recorded acknowledged guardian: $phoneNumber. Total acknowledged in this event: ${set.size}")
+    }
+
+    /**
+     * Retrieves guardians that acknowledged the active SOS event.
+     */
+    fun getAcknowledgedGuardians(context: Context): Set<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_ACKNOWLEDGED_GUARDIANS, emptySet()) ?: emptySet()
+    }
+
+    /**
+     * Clears acknowledged guardian list for fresh SOS event state.
+     */
+    fun clearAcknowledgedGuardians(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_ACKNOWLEDGED_GUARDIANS).apply()
+    }
+
+    /**
+     * Retrieves configured or detected user phone number for Guardian ACK SMS.
+     */
+    fun getUserPhoneNumber(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val saved = prefs.getString(KEY_USER_PHONE_NUMBER, null)?.trim()
+        if (!saved.isNullOrBlank()) return saved
+
+        try {
+            val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val line1 = tm?.line1Number?.trim()
+            if (!line1.isNullOrBlank()) return line1
+        } catch (e: Exception) {}
+        return null
+    }
+
+    /**
+     * Saves user's phone number for Guardian ACK SMS.
+     */
+    fun setUserPhoneNumber(context: Context, phoneNumber: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_USER_PHONE_NUMBER, phoneNumber.trim()).apply()
+    }
+
+    /**
+     * Normalizes and compares two phone numbers accurately according to telecom standards.
+     */
+    fun isPhoneMatch(phone1: String?, phone2: String?): Boolean {
+        if (phone1.isNullOrBlank() || phone2.isNullOrBlank()) return false
+        val p1 = phone1.trim()
+        val p2 = phone2.trim()
+        if (p1 == p2) return true
+
+        val clean1 = p1.replace(Regex("[^0-9+]"), "")
+        val clean2 = p2.replace(Regex("[^0-9+]"), "")
+        if (clean1 == clean2) return true
+
+        try {
+            if (PhoneNumberUtils.compare(clean1, clean2)) return true
+        } catch (e: Throwable) {}
+
+        val digits1 = clean1.filter { it.isDigit() }
+        val digits2 = clean2.filter { it.isDigit() }
+        if (digits1.length >= 10 && digits2.length >= 10) {
+            return digits1.takeLast(10) == digits2.takeLast(10)
+        }
+        if (digits1.isNotEmpty() && digits2.isNotEmpty()) {
+            return digits1 == digits2
+        }
+        return false
+    }
+
+    /**
+     * Evaluates incoming SMS message for valid Guardian Acknowledgement (v1.8.4):
+     * 1. Message body must match "KAIKO ACK" (case-insensitive, ignoring harmless surrounding whitespace).
+     * 2. Active SOS event must be in progress.
+     * 3. Sender must match a configured guardian.
+     * 4. Guardian must be an alerted recipient of the current active SOS event.
+     * 5. Prevents duplicate ACK processing.
+     * 6. Marks guardian as acknowledged and halts escalation.
+     */
+    fun handleIncomingSms(context: Context, sender: String, messageBody: String): Boolean {
+        val trimmed = messageBody.trim()
+        if (!trimmed.equals("KAIKO ACK", ignoreCase = true)) {
+            Log.d(TAG, "Incoming SMS is not 'KAIKO ACK' (body: '$trimmed'). Ignoring.")
+            return false
+        }
+
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val activeEventId = prefs.getString(KEY_ACTIVE_EVENT_ID, null)
+        val currentState = getCurrentState(context)
+        if (activeEventId.isNullOrBlank() || currentState == SosState.IDLE || currentState == SosState.USER_MARKED_SAFE) {
+            Log.w(TAG, "Incoming 'KAIKO ACK' received, but no active SOS event in progress. Ignoring.")
+            return false
+        }
+
+        // Match sender against configured guardians
+        val guardians = getAllGuardians(context)
+        val matchedGuardian = guardians.firstOrNull { isPhoneMatch(it.phone, sender) }
+        if (matchedGuardian == null) {
+            Log.w(TAG, "Incoming 'KAIKO ACK' from $sender, but sender is not a configured guardian. Ignoring.")
+            return false
+        }
+        val guardianIndex = guardians.indexOf(matchedGuardian) + 1
+
+        // Check if that guardian was an alerted recipient of THIS active SOS
+        val alertedGuardians = getAlertedGuardians(context)
+        val wasAlerted = alertedGuardians.any { isPhoneMatch(it, matchedGuardian.phone) || isPhoneMatch(it, sender) }
+        if (!wasAlerted) {
+            Log.w(TAG, "Incoming 'KAIKO ACK' from guardian '${matchedGuardian.name}' ($sender), but guardian was not alerted in current SOS ($activeEventId). Ignoring.")
+            return false
+        }
+
+        // Prevent duplicate ACK processing
+        val alreadyAcked = getAcknowledgedGuardians(context)
+        if (alreadyAcked.any { isPhoneMatch(it, matchedGuardian.phone) || isPhoneMatch(it, sender) }) {
+            Log.d(TAG, "Guardian '${matchedGuardian.name}' ($sender) has already acknowledged active SOS ($activeEventId). Ignoring duplicate ACK.")
+            return false
+        }
+
+        Log.i(TAG, "🟢 VALID GUARDIAN ACK RECEIVED from Guardian $guardianIndex: '${matchedGuardian.name}' ($sender) for SOS $activeEventId!")
+
+        // 1. Record guardian as acknowledged
+        addAcknowledgedGuardian(context, matchedGuardian.phone)
+
+        // 2. Stop pending escalation alarm for current escalation flow
+        cancelEscalationTimer(context)
+
+        // 3. Update state according to existing escalation architecture
+        val ackState = when (guardianIndex) {
+            1 -> SosState.GUARDIAN_1_ACKNOWLEDGED
+            2 -> SosState.GUARDIAN_2_ACKNOWLEDGED
+            3 -> SosState.GUARDIAN_3_ACKNOWLEDGED
+            else -> SosState.GUARDIAN_1_ACKNOWLEDGED
+        }
+        updateState(context, ackState)
+
+        // 4. Update ongoing emergency notification
+        val guardianDisplayName = matchedGuardian.name.ifBlank { "Guardian $guardianIndex" }
+        postEmergencyNotification(
+            context,
+            ackState,
+            guardianDisplayName,
+            "Acknowledged SOS! Help is responding.",
+            activeEventId
+        )
+
+        // 5. Broadcast live state change so UI refreshes immediately
+        broadcastStateChange(context)
+        return true
     }
 
     /**
@@ -620,8 +792,11 @@ object TriggerManager {
      */
     fun handleEscalationTimeout(context: Context) {
         val currentState = getCurrentState(context)
-        if (!currentState.isActive()) {
-            Log.d(TAG, "Escalation timeout ignored because state is inactive ($currentState).")
+        if (!currentState.isActive() || getAcknowledgedGuardians(context).isNotEmpty() ||
+            currentState == SosState.GUARDIAN_1_ACKNOWLEDGED ||
+            currentState == SosState.GUARDIAN_2_ACKNOWLEDGED ||
+            currentState == SosState.GUARDIAN_3_ACKNOWLEDGED) {
+            Log.d(TAG, "Escalation timeout ignored because state is inactive or guardian acknowledged ($currentState).")
             return
         }
 
@@ -653,7 +828,8 @@ object TriggerManager {
             val coords = prefs.getString(KEY_LAST_COORDS, null)
             val triggerMode = prefs.getString(KEY_ACTIVE_TRIGGER_MODE, TRIGGER_MANUAL_APP) ?: TRIGGER_MANUAL_APP
             val status = if (coords != null) LocationStatus.LAST_KNOWN else LocationStatus.UNAVAILABLE
-            val msg = buildEmergencyMessage(triggerMode, status, coords)
+            val userPhone = getUserPhoneNumber(context)
+            val msg = buildEmergencyMessage(triggerMode, status, coords, userPhone)
             Log.i(TAG, "Alerting backup helpline ($helpline)")
             addAlertedGuardian(context, helpline)
             sendSms(context, helpline, msg, guardianIndex = 4, isRetry = false)
@@ -694,6 +870,7 @@ object TriggerManager {
 
         // Section 16: Clean up event state so next SOS starts fresh
         clearAlertedGuardians(context)
+        clearAcknowledgedGuardians(context)
     }
 
     /**
@@ -734,6 +911,7 @@ object TriggerManager {
 
         // Section 16: Clean up event state
         clearAlertedGuardians(context)
+        clearAcknowledgedGuardians(context)
     }
 
     /**
@@ -765,6 +943,7 @@ object TriggerManager {
         val notificationManager = NotificationManagerCompat.from(context)
         notificationManager.cancel(NOTIFICATION_ID)
         clearAlertedGuardians(context)
+        clearAcknowledgedGuardians(context)
     }
 
     /**
@@ -795,6 +974,7 @@ object TriggerManager {
         }
 
         clearAlertedGuardians(context)
+        clearAcknowledgedGuardians(context)
     }
 
     /**
